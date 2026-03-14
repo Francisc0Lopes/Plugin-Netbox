@@ -20,13 +20,13 @@ O desenvolvimento do plugin assenta no seguinte stack tecnológico e áreas de c
 **Gestão de Dependências**: Utilização de `pyproject.toml` para conformidade com as normas atuais de empacotamento Python.
 
 ## Informações
-* [cite_start]**Instituição**: Instituto Superior de Engenharia de Lisboa (ISEL).
-* [cite_start]**Departamento**: Departamento de Engenharia de Electrónica e Telecomunicações e de Computadores (DEETC).
-* [cite_start]**Curso**: Licenciatura em Engenharia Informática, Redes e Telecomunicações.
-* [cite_start]**Ano Letivo**: 2025/2026.
-* [cite_start]**Autor**: Francisco Lopes e João Constantino.
+**Instituição**: Instituto Superior de Engenharia de Lisboa (ISEL).
+**Departamento**: Departamento de Engenharia de Electrónica e Telecomunicações e de Computadores (DEETC).
+**Curso**: Licenciatura em Engenharia Informática, Redes e Telecomunicações.
+**Ano Letivo**: 2025/2026.
+**Autor**: Francisco Lopes e João Constantino.
 
 ## Referências
-* [cite_start][Repositório Oficial NetBox](https://github.com/netbox-community/netbox) 
-* [cite_start][NetBox Topology Views](https://github.com/netbox-community/netbox-topology-views) 
-* [cite_start][Documentação de Desenvolvimento de Plugins NetBox](https://netboxlabs.com/docs/netbox/plugins/development/) 
+[Repositório Oficial NetBox](https://github.com/netbox-community/netbox) 
+[NetBox Topology Views](https://github.com/netbox-community/netbox-topology-views) 
+[Documentação de Desenvolvimento de Plugins NetBox](https://netboxlabs.com/docs/netbox/plugins/development/) 
