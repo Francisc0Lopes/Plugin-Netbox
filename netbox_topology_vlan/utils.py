@@ -31,7 +31,7 @@ def get_vlan(ID_vlan):
             cabos = interface.cable
             cabos_processados.add(cabos.id)
             
-            # Usamos link_peers para evitar o erro 500 que o get_path_endpoints dava
+            # Meteu-se para solucionar o erro 500
             remote_interface = None
             for peer in interface.link_peers:
                 if isinstance(peer, Interface):
