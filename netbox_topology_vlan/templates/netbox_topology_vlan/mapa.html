@@ -1,0 +1,104 @@
+{% extends 'base/layout.html' %}
+{% load static %}
+
+{% block title %}Mapa Lógico de VLANs{% endblock %}
+
+{% block content %}
+<div class="row mb-3">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Mapeamento Lógico</h5>
+                <p>Selecione uma VLAN para gerar a topologia lógica baseada nas configurações de Access/Trunk.</p>
+                
+                <div class="d-flex gap-2">
+                    <select id="vlan-select" class="form-select">
+                        <option value="">-- Escolha uma VLAN --</option>
+                        {% for v in vlans %}
+                            <option value="{{ v.id }}">VLAN {{ v.vid }} - {{ v.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <button id="btn-gerar" class="btn btn-primary">Gerar Mapa</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-body" style="padding: 0;">
+                <div id="mapa-rede" style="width: 100%; height: 600px; background-color: #f8f9fa;">
+                    </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+
+<script>
+    document.getElementById('btn-gerar').addEventListener('click', function() {
+        var vlanId = document.getElementById('vlan-select').value;
+        if (!vlanId) {
+            alert('Por favor, selecione uma VLAN.');
+            return;
+        }
+
+        fetch(`/api/plugins/topology-vlan/get-topology/?vlan_id=${vlanId}`)// API REST
+            .then(response => response.json())
+            .then(data => {
+                if (data.Erro) {
+                    alert(data.Erro);
+                    return;
+                }
+                desenharMapa(data);
+            })
+            .catch(error => {
+                console.error('Erro ao chamar a API:', error);
+                alert('Erro ao carregar os dados. Verifique a consola.');
+            });
+    });
+
+    function desenharMapa(dados) {
+        var nodes = new vis.DataSet(
+            dados.nos.map(no => ({
+                id: no.id,
+                label: no.name + '\n(' + no.role + ')',
+                shape: 'box',
+                color: { background: '#0d6efd', border: '#0a58ca' },
+                font: { color: 'white', face: 'monospace' },
+                shadow: true
+            }))
+        );
+
+        var edges = new vis.DataSet(//Fazer as ligacoes
+            dados.ligacoes.map(ligacao => {
+                // Trunk = Laranja Access = Verde.
+                var isTrunk = ligacao.source_mode === 'Trunk' || ligacao.target_mode === 'Trunk';
+                
+                return {
+                    from: ligacao.source,
+                    to: ligacao.target,
+                    label: ligacao.source_port + ' ↔ ' + ligacao.target_port,
+                    dashes: isTrunk, 
+                    color: { color: isTrunk ? '#fd7e14' : '#198754', highlight: '#dc3545' },
+                    width: 2,
+                    font: { align: 'top', size: 12 }
+                };
+            })
+        );
+
+        var container = document.getElementById('mapa-rede');
+        var data = { nodes: nodes, edges: edges };
+        var options = {
+            physics: { 
+                barnesHut: { gravitationalConstant: -4000 } // Afasta os equipamentos para não ficarem sobrepostos
+            }
+        };
+
+        new vis.Network(container, data, options);
+    }
+</script>
+{% endblock %}

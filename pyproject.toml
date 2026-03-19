@@ -6,12 +6,13 @@ requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name =  "my-example-plugin"
+name = "netbox-topology-vlan"
 version = "0.1.0"
 authors = [
-    {name = "John Doe", email = "test@netboxlabs.com"},
+    {name = "Francisco Lopes", email = "A49852@alunos.isel.pt"},
+    {name = "João Constantino", email = "A49323@alunos.isel.pt"}
 ]
-description = "An example NetBox plugin."
+description = "Plugin para Visualização Dinâmica e Automação de Topologias Lógicas (VLANs) em NetBox."
 readme = "README.md"
 
 classifiers=[
