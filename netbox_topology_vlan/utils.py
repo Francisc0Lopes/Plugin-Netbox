@@ -18,10 +18,12 @@ def get_vlan(ID_vlan):
         
         # Adicionar Nó
         if not any(n['id'] == Equip.id for n in nos):
+            # Garantir compatibilidade com versões novas do Netbox
+            role_obj = getattr(Equip, 'role', getattr(Equip, 'device_role', None))
             nos.append({
                 "id": Equip.id,
                 "name": Equip.name, 
-                "role": Equip.device_role.name 
+                "role": role_obj.name if role_obj else "" 
             })
         
         # Processar Cabos e Ligações
@@ -29,12 +31,11 @@ def get_vlan(ID_vlan):
             cabos = interface.cable
             cabos_processados.add(cabos.id)
             
-            path_destino = cabos.get_path_endpoints() #Descobrir o path destino
+            # Usamos link_peers para evitar o erro 500 que o get_path_endpoints dava
             remote_interface = None
-            
-            for endpoint in path_destino:
-                if endpoint != interface:
-                    remote_interface = endpoint
+            for peer in interface.link_peers:
+                if isinstance(peer, Interface):
+                    remote_interface = peer
                     break
             
             if isinstance(remote_interface, Interface):#Caso o outro lado seja valido
