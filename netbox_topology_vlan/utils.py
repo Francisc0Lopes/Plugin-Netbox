@@ -1,6 +1,13 @@
 from dcim.models import Interface
 from ipam.models import VLAN
 
+def get_vlan_model(iface, vlan):
+    if iface.untagged_vlan == vlan.id:
+        return "Access"
+    if iface.tagged_vlans.filter(id=vlan.id).exists():
+        return "Trunk"
+    return "Unknown"
+
 def get_vlan(ID_vlan):
     
     try:
@@ -40,18 +47,17 @@ def get_vlan(ID_vlan):
             
             if isinstance(remote_interface, Interface):#Caso o outro lado seja valido
                 
-                is_remote_access = (remote_interface.untagged_vlan == vlan)
-                is_remote_trunk = (vlan in remote_interface.tagged_vlans.all())
+                source_mode = get_vlan_model(interface, vlan)
+                target_mode = get_vlan_model(remote_interface, vlan)
                 
-                if is_remote_access or is_remote_trunk:
-                    ligacoes.append({
+                ligacoes.append({
                         "source" : Equip.id, 
                         "target" : remote_interface.device.id, 
                         "source_port" : interface.name, 
-                        "source_mode": "Trunk" if vlan in interface.tagged_vlans.all() else "Access",
+                        "source_mode": source_mode,
                         "target_port": remote_interface.name,
-                        "target_mode": "Trunk" if is_remote_trunk else "Access", 
+                        "target_mode": target_mode, 
                         "stp_state": "Forwarding" 
-                    })       
+                })       
                     
     return {"vlan": vlan.vid, "nos": nos, "ligacoes": ligacoes}
