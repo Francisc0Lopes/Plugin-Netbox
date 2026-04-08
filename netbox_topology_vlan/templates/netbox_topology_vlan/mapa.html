@@ -4,34 +4,84 @@
 {% block title %}Mapa Lógico de VLANs{% endblock %}
 
 {% block content %}
+<style>
+    /* O Pop-up Escuro Moderno */
+    div.vis-tooltip {
+        position: absolute;
+        visibility: hidden;
+        padding: 12px;
+        background-color: #1b1b22 !important; 
+        color: #e2e8f0 !important; 
+        border: 1px solid #334155 !important;
+        border-radius: 8px;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+        z-index: 1000;
+        font-family: var(--font-family-sans-serif, Arial, sans-serif);
+        pointer-events: none;
+        min-width: 210px;
+    }
+    .popup-header {
+        color: #ffffff;
+        border-bottom: 1px solid #334155;
+        display: block;
+        margin-bottom: 8px;
+        padding-bottom: 6px;
+        font-size: 13px;
+        font-weight: 600;
+    }
+    .popup-body {
+        font-size: 12px;
+        line-height: 1.5;
+    }
+    .badge-estado {
+        background-color: #14532d;
+        color: #4ade80;
+        padding: 3px 8px;
+        border-radius: 4px;
+        font-weight: 600;
+        display: inline-block;
+        margin-top: 6px;
+        font-size: 11px;
+    }
+    /* Estilos Estatísticas (Mais pequenos) */
+    .stat-label { font-size: 10px; letter-spacing: 0.5px; color: #adb5bd; }
+    .stat-value { font-size: 15px; color: #f8f9fa; margin-top: -2px; }
+</style>
 
-<div class="row mb-3">
-    <div class="col-md-12">
-        <div class="d-flex justify-content-between align-items-center">
-            <h2 class="mb-0">
-                <i class="fas fa-network-wired"></i> Mapa de VLANs
-            </h2>
-            <div class="d-flex gap-3">
-                <button id="btnDownloadImage" class="btn btn-info" href="#">
-				<i class="mdi mdi-download"></i> Download XML
-                </button>
-                <button id="btnDownloadImage" class="btn btn-info" href="#">
-				<i class="mdi mdi-download"></i> Download PNG
-                </button>
+<template id="edge-popup-template">
+    <div>
+        <strong class="popup-header">
+            <i class="mdi mdi-information-outline"></i> Detalhes da Ligação
+        </strong>
+        <div class="popup-body">
+            Porta A: <span class="porta-a"></span> (<span class="modo-a"></span>)<br>
+            Porta B: <span class="porta-b"></span> (<span class="modo-b"></span>)<br>
+            <div>
+                <span class="badge-estado">Estado: <span class="estado-stp"></span></span>
             </div>
         </div>
-        <hr class="mt-2 mb-0">
+    </div>
+</template>
+
+<div class="row mb-2">
+    <div class="col-md-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <h4 class="mb-0"><i class="fas fa-network-wired"></i> Mapa de VLANs</h4>
+            <div class="d-flex gap-2">
+                <button id="btnDownloadXML" class="btn btn-sm btn-info"><i class="mdi mdi-download"></i> XML</button>
+                <button id="btnDownloadPNG" class="btn btn-sm btn-info"><i class="mdi mdi-image"></i> PNG</button>
+            </div>
+        </div>
+        <hr class="mt-2 mb-2">
     </div>
 </div>
 
-<div class="row mb-3">
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title">Mapeamento Lógico</h5>
-                <p class="text-muted small">Topologia lógica baseada nas configurações de Access/Trunk.</p>
-                
-                <div class="d-flex gap-2">
+<div class="row mb-2">
+    <div class="col-md-7">
+        <div class="card mb-0">
+            <div class="card-body p-2 d-flex justify-content-between align-items-center">
+                <strong class="mb-0 me-3 text-muted" style="font-size: 13px;">Selecione a VLAN:</strong>
+                <div class="d-flex gap-2 flex-grow-1">
                     <select id="vlan-select" class="form-select form-select-sm">
                         <option value="">-- Escolha uma VLAN --</option>
                         {% for v in vlans %}
@@ -40,9 +90,27 @@
                             </option>
                         {% endfor %}
                     </select>
-                    <button id="btn-gerar" class="btn btn-sm btn-primary">
-                        <i class="mdi mdi-refresh"></i> Gerar Mapa
+                    <button id="btn-gerar" class="btn btn-sm btn-primary text-nowrap">
+                        <i class="mdi mdi-refresh"></i> Gerar
                     </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-5">
+        <div class="card mb-0 bg-dark text-light"> <div class="card-body p-2 d-flex justify-content-around align-items-center">
+                <div class="text-center">
+                    <div class="text-uppercase fw-bold stat-label">Nós</div>
+                    <div class="fw-bolder stat-value" id="stat-nos">0</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-uppercase fw-bold stat-label">Ligações</div>
+                    <div class="fw-bolder stat-value" id="stat-ligacoes">0</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-uppercase fw-bold stat-label">VLAN Ativa</div>
+                    <div class="fw-bolder stat-value" id="stat-vlan">-</div>
                 </div>
             </div>
         </div>
@@ -53,185 +121,94 @@
     <div class="col-md-12">
         <div class="card">
             <div class="card-body p-0">
-                <div id="mapa-rede" style="width: 100%; height: 700px;">
-                </div>
+                <div id="mapa-rede" style="width: 100%; height: 650px; background-color: #f1f5f9; border-radius: 4px; border: 1px solid #dee2e6;"></div>
             </div>
         </div>
     </div>
 </div>
 
 <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
-
 <script>
-    // --- Definição de Ícones SVG (Para garantir fidelidade profissional) ---
-    // Router (Círculo vermelho com setas)
-    const svgRouter = `
-    <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
-        <circle cx="50" cy="50" r="45" fill="#dc3545" stroke="#ffffff" stroke-width="2"/>
-        <path d="M50 20v60m30-30H20" stroke="white" stroke-width="8" stroke-linecap="round"/>
-        <path d="M40 30l10-10 10 10M40 70l10 10 10-10M30 40l-10 10 10 10M70 40l10 10-10 10" 
-            fill="none" stroke="white" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
-    </svg>
-    `;
-    // Switch (Retângulo azul com portas)
-    const svgSwitch = `
-    <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
-        <rect width="90" height="60" x="5" y="20" rx="5" fill="#0d6efd" stroke="#ffffff" stroke-width="2"/>
-        <path d="M15 45h70M50 45v35" stroke="#ffffff" stroke-width="5"/>
-        <circle cx="20" cy="35" r="4" fill="#198754"/>
-        <circle cx="35" cy="35" r="4" fill="#198754"/>
-        <circle cx="50" cy="35" r="4" fill="#198754"/>
-        <circle cx="65" cy="35" r="4" fill="#198754"/>
-        <circle cx="80" cy="35" r="4" fill="#198754"/>
-        <circle cx="20" cy="65" r="4" fill="white"/>
-        <circle cx="35" cy="65" r="4" fill="white"/>
-        <circle cx="50" cy="65" r="4" fill="white"/>
-        <circle cx="65" cy="65" r="4" fill="white"/>
-        <circle cx="80" cy="65" r="4" fill="white"/>
-    </svg>
-    `;
-    // Server (Retângulo verde com detalhes)
-    const svgServer = `
-    <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
-        <rect x="10" y="20" width="80" height="60" rx="5" fill="#28a745" stroke="#ffffff" stroke-width="2"/>
-        <rect x="15" y="28" width="70" height="10" rx="2" fill="#198754"/>
-        <rect x="15" y="45" width="70" height="10" rx="2" fill="#198754"/>
-        <rect x="15" y="62" width="70" height="10" rx="2" fill="#198754"/>
-        <circle cx="20" cy="33" r="2" fill="#00ff00"/>
-        <circle cx="20" cy="50" r="2" fill="#00ff00"/>
-        <circle cx="20" cy="67" r="2" fill="#00ff00"/>
-        <rect x="75" y="30" width="8" height="6" fill="#ffffff"/>
-        <rect x="75" y="47" width="8" height="6" fill="#ffffff"/>
-        <rect x="75" y="64" width="8" height="6" fill="#ffffff"/>
-    </svg>
-    `;
-
-    const svgUnknown = `
-    <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
-        <rect x="10" y="20" width="80" height="60" rx="5" fill="#6c757d" stroke="#ffffff" stroke-width="2"/>
-        
-        <text x="50" y="60" text-anchor="middle" fill="white" font-size="40" font-family="Arial" dy=".3em">
-            ?
-        </text>
-    </svg>`;
-
-     const roleMatchers = [
-        { match: r => r.includes('router'), icon: svgRouter },
-        { match: r => r.includes('switch'), icon: svgSwitch },
-        { match: r => r.includes('server'), icon: svgServer },//Acrestar mais ícones conforme necessário
-    ];
-
+    // CORES NORMAIS: Router e Switch a Azul (#0d6efd)
+    const svgRouter = `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" fill="#0d6efd" stroke="#ffffff" stroke-width="3"/><path d="M50 20v60m30-30H20" stroke="white" stroke-width="8" stroke-linecap="round"/><path d="M40 30l10-10 10 10M40 70l10 10 10-10M30 40l-10 10 10 10M70 40l10 10-10 10" fill="none" stroke="white" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+    const svgSwitch = `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="90" height="60" x="5" y="20" rx="8" fill="#0d6efd" stroke="#ffffff" stroke-width="3"/><path d="M15 45h70M50 45v35" stroke="#ffffff" stroke-width="5"/><circle cx="20" cy="35" r="4" fill="#ffffff"/><circle cx="35" cy="35" r="4" fill="#ffffff"/><circle cx="50" cy="35" r="4" fill="#ffffff"/><circle cx="65" cy="35" r="4" fill="#ffffff"/><circle cx="20" cy="65" r="4" fill="#ffffff"/><circle cx="50" cy="65" r="4" fill="#ffffff"/><circle cx="80" cy="65" r="4" fill="#ffffff"/></svg>`;
+    
+    function svgToDataUri(svg) { return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg); }
+    
     function getDeviceIcon(role) {
         role = (role || "").toLowerCase();
-        const found = roleMatchers.find(r => r.match(role));
-        return found ? found.icon : svgUnknown; // Ícone genérico para roles desconhecidos TESTAR!!!
+        if (role.includes('router')) return svgRouter;
+        if (role.includes('switch')) return svgSwitch;
+        return `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect x="10" y="20" width="80" height="60" rx="5" fill="#6c757d" stroke="#ffffff" stroke-width="2"/><text x="50" y="60" text-anchor="middle" fill="white" font-size="40">?</text></svg>`;
     }
 
-    // Função para converter string SVG em data URI para o Vis.js
-    function svgToDataUri(svg) {
-        return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+    function criarPopup(ligacao) {
+        const template = document.getElementById('edge-popup-template');
+        const clone = template.content.cloneNode(true);
+        const div = document.createElement('div');
+        div.appendChild(clone);
+
+        div.querySelector('.porta-a').textContent = ligacao.source_port;
+        div.querySelector('.modo-a').textContent = ligacao.source_mode;
+        div.querySelector('.porta-b').textContent = ligacao.target_port;
+        div.querySelector('.modo-b').textContent = ligacao.target_mode;
+        div.querySelector('.estado-stp').textContent = ligacao.stp_state || 'Forwarding';
+
+        return div;
     }
 
-    // --- Lógica Principal ---
     document.getElementById('btn-gerar').addEventListener('click', function() {
-        var vlanId = document.getElementById('vlan-select').value;
-        if (!vlanId) {
-            alert('Por favor, selecione uma VLAN.');
-            return;
-        }
+        const vlanId = document.getElementById('vlan-select').value;
+        if (!vlanId) return alert('Por favor, selecione uma VLAN.');
 
-        // Feedback de carregamento
         document.getElementById('mapa-rede').style.opacity = '0.5';
-
         fetch(`/api/plugins/topology-vlan/get-topology/?vlan_id=${vlanId}`)
             .then(response => response.json())
             .then(data => {
                 document.getElementById('mapa-rede').style.opacity = '1';
-                if (data.Erro) {
-                    alert(data.Erro);
-                    return;
-                }
+                if (data.Erro) return alert(data.Erro);
+                
+                document.getElementById('stat-nos').innerText = data.nos.length;
+                document.getElementById('stat-ligacoes').innerText = data.ligacoes.length;
+                const select = document.getElementById('vlan-select');
+                document.getElementById('stat-vlan').innerText = select.options[select.selectedIndex].text.split(' - ')[0];
+
                 desenharMapa(data);
-            })
-            .catch(error => {
-                document.getElementById('mapa-rede').style.opacity = '1';
-                console.error('Erro ao chamar a API:', error);
-                alert('Erro ao carregar os dados. Verifique a consola.');
             });
     });
 
     function desenharMapa(dados) {
-       var nodes = new vis.DataSet(
-            dados.nos.map(no => {
-                return {
-                    id: no.id,
-                    label: no.name,
-                    shape: 'image',
-                    image: svgToDataUri(getDeviceIcon(no.role)), 
-                    font: { 
-                        color: '#ffffff',
-                        size: 16,
-                        face: 'monospace',
-                        vadjust: 55
-                    },
-                    shadow: { enabled: true, color: 'rgba(0,0,0,0.5)', size: 8 }
-                };
-            })
-        );
+        const nodes = new vis.DataSet(dados.nos.map(no => ({
+            id: no.id, label: no.name, shape: 'image', image: svgToDataUri(getDeviceIcon(no.role)),
+            font: { color: '#334155', size: 14, face: 'monospace', vadjust: 55, bold: true },
+            shadow: { enabled: true, color: 'rgba(0,0,0,0.1)', size: 5 }
+        })));
 
-        var edges = new vis.DataSet(
-            dados.ligacoes.map(ligacao => {
-                // Trunk = Laranja Tracejado | Access = Verde Contínuo
-                var isTrunk = ligacao.source_mode === 'Trunk' || ligacao.target_mode === 'Trunk';
-                
-                return {
-                    from: ligacao.source,
-                    to: ligacao.target,
-                    label: ligacao.source_port + ' ↔ ' + ligacao.target_port,
-                    dashes: isTrunk, 
-                    color: { 
-                        color: isTrunk ? '#fd7e14' : '#198754', // Laranja Trunk, Verde Access
-                        highlight: '#00d4ff',
-                        hover: '#ffffff'
-                    },
-                    width: 3,
-                    font: { align: 'top', size: 11, color: '#adb5bd' },
-                    shadow: true
-                };
-            })
-        );
+        const edges = new vis.DataSet(dados.ligacoes.map(ligacao => {
+            const isTrunk = ligacao.source_mode === 'Trunk' || ligacao.target_mode === 'Trunk';
+            
+            // CORES DE LIGAÇÃO NORMAIS: 
+            // Trunk -> Laranja escuro / Access -> Cinzento Ardósia Escuro
+            const corLigacao = isTrunk ? '#f97316' : '#475569';
 
-        var container = document.getElementById('mapa-rede');
-        var data = { nodes: nodes, edges: edges };
-        
-        var options = {
-            physics: { 
-                enabled: true,
-                barnesHut: { 
-                    gravitationalConstant: -7000, 
-                    springLength: 200,
-                    springConstant: 0.04
-                },
-                stabilization: { iterations: 150 }
-            },
-            interaction: {
-                hover: true,
-                navigationButtons: true, // Adiciona botões de zoom profissionais
-                keyboard: true
-            }
-        };
+            return {
+                from: ligacao.source, to: ligacao.target,
+                label: ligacao.source_port + ' ↔ ' + ligacao.target_port,
+                title: criarPopup(ligacao),
+                dashes: isTrunk, // Tracejado para trunk, linha contínua para access
+                color: { color: corLigacao, highlight: '#3b82f6', hover: '#0ea5e9' },
+                width: 3, 
+                font: { align: 'top', size: 11, color: '#475569', background: 'rgba(241, 245, 249, 0.85)' },
+                smooth: { type: 'continuous' }
+            };
+        }));
 
-        new vis.Network(container, data, options);
+        new vis.Network(document.getElementById('mapa-rede'), { nodes, edges }, {
+            physics: { forceAtlas2Based: { gravitationalConstant: -120, springLength: 220 } },
+            interaction: { hover: true, tooltipDelay: 100 }
+        });
     }
 
-    // --- AUTOMAÇÃO ---
-    // Executa automaticamente quando a página carrega se virmos do botão da VLAN
-    window.onload = function() {
-        const vlanSelect = document.getElementById('vlan-select');
-        if (vlanSelect.value !== "") {
-            // "Clica" no botão por nós
-            document.getElementById('btn-gerar').click();
-        }
-    };
+    window.onload = () => { if (document.getElementById('vlan-select').value) document.getElementById('btn-gerar').click(); };
 </script>
 {% endblock %}
