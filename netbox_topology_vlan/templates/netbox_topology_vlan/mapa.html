@@ -271,6 +271,7 @@
                 return {
                     id: no.id,
                     label: no.name,
+                    url : no.url,
                     shape: 'image',
                     image: svgToDataUri(getDeviceIcon(no.role)), 
                     font: { 
@@ -339,7 +340,18 @@
             }
         };
 
-        new vis.Network(container, data, options);
+        var network = new vis.Network(container, data, options);
+
+        network.on("doubleClick", function (params) {
+        if (params.nodes.length > 0) {
+            const nodeId = params.nodes[0];
+            const node = nodes.get(nodeId);
+
+            if (node.url) {
+                window.location.href = node.url;
+                }
+            }
+        });
     }
 
     // --- AUTOMAÇÃO ---

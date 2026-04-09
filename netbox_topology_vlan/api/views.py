@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from ipam.models import VLAN
 from ..utils import get_vlan  
+from dcim.models import Device
 
 class VlanTopologyView(APIView):
     permission_classes = [IsAuthenticated]
@@ -24,3 +25,4 @@ class VlanTopologyView(APIView):
             return Response(resultado, status=404)
             
         return Response(resultado)#devolve mapa
+    

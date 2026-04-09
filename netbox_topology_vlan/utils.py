@@ -30,7 +30,8 @@ def get_vlan(ID_vlan):
             nos.append({
                 "id": Equip.id,
                 "name": Equip.name, 
-                "role": role_obj.name if role_obj else "" 
+                "role": role_obj.name if role_obj else "" ,
+                "url" : Equip.get_absolute_url()
             })
         
         # Processar Cabos e Ligações
