@@ -1,0 +1,1 @@
+#Indica ao Python que a pasta api deve ser tratada como um pacote

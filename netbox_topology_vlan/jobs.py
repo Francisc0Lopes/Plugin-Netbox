@@ -4,6 +4,7 @@ from ipam.models import VLAN
 from django.core.cache import cache
 from ..utils import get_vlan
 
+# AINDA NÃO TESTADO, A IDEIA É USAR ESTE JOB PARA REGERAR AS TOPOLOGIAS DE TODAS AS VLANs EM SEGUNDO PLANO
 """Para usar em topologias gigantes usa tarefas em segundo plano"""
 class RegenerateTopology(Job):
     """Recalcula topologias com algoritmo STP"""
