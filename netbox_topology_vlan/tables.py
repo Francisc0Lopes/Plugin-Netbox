@@ -1,0 +1,1 @@
+# Mostrar listas no estilo NetBox ex: tabela de VLANs tabela de ligações tabela de dispositivos na VLAN

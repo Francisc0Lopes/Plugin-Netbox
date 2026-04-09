@@ -287,16 +287,16 @@
         var edges = new vis.DataSet(
             dados.ligacoes.map(ligacao => {
                 // Lógica de determinação de cor e estilo para Access/Trunk
-                let borderColor = '#ADD8E6'; // Default: Azul (Unknown)
-                let isDashed = true;
+                let borderColor = '#198754'; // Default: Verde (Unknown)
+                let isDashed = false;
 
                 console.log(`Ligação ${ligacao.source} ↔ ${ligacao.target}: source_mode=${ligacao.source_mode}, target_mode=${ligacao.target_mode}`);
                 if (ligacao.source_mode === 'Trunk' || ligacao.target_mode === 'Trunk') {
                     borderColor = '#fd7e14'; // Laranja Trunk
                     isDashed = true;
                 } else if (ligacao.source_mode === 'Access' || ligacao.target_mode === 'Access') {
-                    borderColor = '#198754'; // Verde Access
-                    isDashed = false;
+                    borderColor = '#0000f9'; // Azul Access
+                    isDashed = true;
                 }
                 return {
                     from: ligacao.source,

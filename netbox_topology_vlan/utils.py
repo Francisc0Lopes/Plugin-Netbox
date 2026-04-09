@@ -2,10 +2,10 @@ from dcim.models import Interface
 from ipam.models import VLAN
 
 def get_vlan_model(iface, vlan):
-    if iface.untagged_vlan == vlan.id:
-        return "Access"
     if iface.tagged_vlans.filter(id=vlan.id).exists():
         return "Trunk"
+    if iface.untagged_vlan and iface.untagged_vlan.id == vlan.id:
+        return "Access"
     return "Unknown"
 
 def get_vlan(ID_vlan):
