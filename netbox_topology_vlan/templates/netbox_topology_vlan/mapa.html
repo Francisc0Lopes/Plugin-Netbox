@@ -68,6 +68,11 @@
         <div class="d-flex justify-content-between align-items-center">
             <h4 class="mb-0"><i class="fas fa-network-wired"></i> Mapa de VLANs</h4>
             <div class="d-flex gap-2">
+                <input type="file" id="fileGNS3" style="display: none;" accept=".gns3">
+                <button id="btnImportGNS3" class="btn btn-sm btn-warning">
+                    <i class="mdi mdi-upload"></i> Importar GNS3
+                </button>
+                
                 <button id="btnDownloadXML" class="btn btn-sm btn-info"><i class="mdi mdi-download"></i> XML</button>
                 <button id="btnDownloadPNG" class="btn btn-sm btn-info"><i class="mdi mdi-image"></i> PNG</button>
             </div>
@@ -99,7 +104,8 @@
     </div>
     
     <div class="col-md-5">
-        <div class="card mb-0 bg-dark text-light"> <div class="card-body p-2 d-flex justify-content-around align-items-center">
+        <div class="card mb-0 bg-dark text-light"> 
+            <div class="card-body p-2 d-flex justify-content-around align-items-center">
                 <div class="text-center">
                     <div class="text-uppercase fw-bold stat-label">Nós</div>
                     <div class="fw-bolder stat-value" id="stat-nos">0</div>
@@ -129,6 +135,9 @@
 
 <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
 <script>
+    // Variável para guardar os dados e poder gerar o XML
+    let globalDados = null; 
+
     // CORES NORMAIS: Router e Switch a Azul (#0d6efd)
     const svgRouter = `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" fill="#0d6efd" stroke="#ffffff" stroke-width="3"/><path d="M50 20v60m30-30H20" stroke="white" stroke-width="8" stroke-linecap="round"/><path d="M40 30l10-10 10 10M40 70l10 10 10-10M30 40l-10 10 10 10M70 40l10 10-10 10" fill="none" stroke="white" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
     const svgSwitch = `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="90" height="60" x="5" y="20" rx="8" fill="#0d6efd" stroke="#ffffff" stroke-width="3"/><path d="M15 45h70M50 45v35" stroke="#ffffff" stroke-width="5"/><circle cx="20" cy="35" r="4" fill="#ffffff"/><circle cx="35" cy="35" r="4" fill="#ffffff"/><circle cx="50" cy="35" r="4" fill="#ffffff"/><circle cx="65" cy="35" r="4" fill="#ffffff"/><circle cx="20" cy="65" r="4" fill="#ffffff"/><circle cx="50" cy="65" r="4" fill="#ffffff"/><circle cx="80" cy="65" r="4" fill="#ffffff"/></svg>`;
@@ -178,6 +187,8 @@
     });
 
     function desenharMapa(dados) {
+        globalDados = dados; // Guarda os dados para a exportação XML
+
         const nodes = new vis.DataSet(dados.nos.map(no => ({
             id: no.id, label: no.name, shape: 'image', image: svgToDataUri(getDeviceIcon(no.role)),
             font: { color: '#334155', size: 14, face: 'monospace', vadjust: 55, bold: true },
@@ -186,16 +197,13 @@
 
         const edges = new vis.DataSet(dados.ligacoes.map(ligacao => {
             const isTrunk = ligacao.source_mode === 'Trunk' || ligacao.target_mode === 'Trunk';
-            
-            // CORES DE LIGAÇÃO NORMAIS: 
-            // Trunk -> Laranja escuro / Access -> Cinzento Ardósia Escuro
             const corLigacao = isTrunk ? '#f97316' : '#475569';
 
             return {
                 from: ligacao.source, to: ligacao.target,
                 label: ligacao.source_port + ' ↔ ' + ligacao.target_port,
                 title: criarPopup(ligacao),
-                dashes: isTrunk, // Tracejado para trunk, linha contínua para access
+                dashes: isTrunk, 
                 color: { color: corLigacao, highlight: '#3b82f6', hover: '#0ea5e9' },
                 width: 3, 
                 font: { align: 'top', size: 11, color: '#475569', background: 'rgba(241, 245, 249, 0.85)' },
@@ -208,6 +216,124 @@
             interaction: { hover: true, tooltipDelay: 100 }
         });
     }
+
+    // ==========================================
+    // EXPORTAÇÃO PNG
+    // ==========================================
+    document.getElementById('btnDownloadPNG').addEventListener('click', function() {
+        const canvas = document.querySelector('#mapa-rede canvas');
+        if (!canvas) return alert('Por favor, gere o mapa primeiro!');
+
+        // Cria um canvas temporário para aplicar o fundo cinzento (#f1f5f9)
+        const tempCanvas = document.createElement('canvas');
+        const tempCtx = tempCanvas.getContext('2d');
+        tempCanvas.width = canvas.width;
+        tempCanvas.height = canvas.height;
+        
+        tempCtx.fillStyle = '#f1f5f9';
+        tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+        tempCtx.drawImage(canvas, 0, 0);
+
+        const link = document.createElement('a');
+        link.download = 'Topologia_VLAN.png';
+        link.href = tempCanvas.toDataURL('image/png');
+        link.click();
+    });
+
+    // ==========================================
+    // EXPORTAÇÃO XML
+    // ==========================================
+    document.getElementById('btnDownloadXML').addEventListener('click', function() {
+        if (!globalDados) return alert('Por favor, gere o mapa primeiro!');
+
+        let xml = '<?xml version="1.0" encoding="UTF-8"?>\n<topologia>\n';
+        
+        xml += '  <nos>\n';
+        globalDados.nos.forEach(no => {
+            const safeName = no.name.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+            xml += `    <no id="${no.id}" nome="${safeName}" role="${no.role}" />\n`;
+        });
+        xml += '  </nos>\n';
+        
+        xml += '  <ligacoes>\n';
+        globalDados.ligacoes.forEach(lig => {
+            xml += `    <ligacao source="${lig.source}" target="${lig.target}" source_port="${lig.source_port}" target_port="${lig.target_port}" source_mode="${lig.source_mode}" target_mode="${lig.target_mode}" stp_state="${lig.stp_state}" />\n`;
+        });
+        xml += '  </ligacoes>\n';
+        
+        xml += '</topologia>';
+
+        const blob = new Blob([xml], { type: 'text/xml;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.download = 'Topologia_VLAN.xml';
+        link.href = url;
+        link.click();
+        URL.revokeObjectURL(url);
+    });
+
+    // ==========================================
+    // IMPORTAÇÃO GNS3
+    // ==========================================
+    
+    // Função auxiliar para ir buscar o token de segurança do Django (CSRF)
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    // Quando clicas no botão bonito, ele "clica" no input de ficheiro invisível
+    document.getElementById('btnImportGNS3').addEventListener('click', () => {
+        document.getElementById('fileGNS3').click();
+    });
+
+    // Quando o utilizador escolhe o ficheiro GNS3
+    document.getElementById('fileGNS3').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        // Feedback visual
+        document.getElementById('btnImportGNS3').innerHTML = '<i class="mdi mdi-loading mdi-spin"></i> A Importar...';
+
+        // Envia o ficheiro para o backend (vamos criar esta view no próximo passo)
+        fetch('/api/plugins/topology-vlan/import-gns3/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken') // Muito importante para o Django aceitar!
+            },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('btnImportGNS3').innerHTML = '<i class="mdi mdi-upload"></i> Importar GNS3';
+            if (data.Erro) {
+                alert('Erro na importação: ' + data.Erro);
+            } else {
+                alert(`Sucesso! Foram criados ${data.criados} equipamentos.`);
+                location.reload(); // Recarrega a página para atualizar os dados
+            }
+        })
+        .catch(err => {
+            document.getElementById('btnImportGNS3').innerHTML = '<i class="mdi mdi-upload"></i> Importar GNS3';
+            console.error(err);
+            alert('Ainda não criámos a API de backend para o GNS3! Avançamos para o views.py?');
+        });
+
+        e.target.value = ''; // Limpa o input
+    });
 
     window.onload = () => { if (document.getElementById('vlan-select').value) document.getElementById('btn-gerar').click(); };
 </script>
