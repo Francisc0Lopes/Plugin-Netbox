@@ -2,7 +2,7 @@ import json
 import traceback
 from django.db import transaction
 from dcim.models import Device, DeviceType, Site, Interface, Cable, Manufacturer
-from ipam.models import VLAN  # <--- Nova importação para manipular VLANs
+from ipam.models import VLAN 
 
 try:
     from dcim.models import DeviceRole as Role
@@ -19,7 +19,6 @@ def process_gns3_file(file_content):
 
     try:
         with transaction.atomic():
-            # 1. Configurações Base
             site, _ = Site.objects.get_or_create(name="Lab GNS3", slug="lab-gns3", defaults={'status': 'active'})
             manufacturer, _ = Manufacturer.objects.get_or_create(name="GNS3 Generic", slug="gns3-generic")
             
@@ -31,7 +30,7 @@ def process_gns3_file(file_content):
             type_switch, _ = DeviceType.objects.get_or_create(model="GNS3 Switch", slug="gns3-switch", manufacturer=manufacturer)
             type_pc, _ = DeviceType.objects.get_or_create(model="GNS3 PC", slug="gns3-pc", manufacturer=manufacturer)
 
-            # A MAGIA DA VLAN: Cria a VLAN 1 (VLAN GNS3) se não existir
+            #
             vlan_gns3, _ = VLAN.objects.get_or_create(
                 vid=1, 
                 defaults={'name': 'VLAN GNS3 Auto', 'status': 'active'}
@@ -40,7 +39,7 @@ def process_gns3_file(file_content):
             created_devices = 0
             device_map = {} 
 
-            # 2. CRIAR EQUIPAMENTOS
+            #CRIAR EQUIPAMENTOS
             for node in nodes:
                 node_id = node.get('node_id')
                 name = node.get('name')
@@ -71,7 +70,7 @@ def process_gns3_file(file_content):
 
             created_cables = 0
             
-            # 3. CRIAR INTERFACES, CABOS E ATRIBUIR VLAN
+            #CRIAR INTERFACES, CABOS E ATRIBUIR VLAN
             for link in links:
                 link_nodes = link.get('nodes', [])
                 if len(link_nodes) == 2:
@@ -85,7 +84,6 @@ def process_gns3_file(file_content):
                         iface1_name = node1_data.get('label', {}).get('text', f"port{node1_data.get('port_number')}")
                         iface2_name = node2_data.get('label', {}).get('text', f"port{node2_data.get('port_number')}")
 
-                        # A MAGIA ACONTECE AQUI: Ao criar a porta, dizemos logo que é 'access' e damos a VLAN 1!
                         iface1, _ = Interface.objects.get_or_create(
                             device=dev1, name=iface1_name, 
                             defaults={'type': '1000base-t', 'mode': 'access', 'untagged_vlan': vlan_gns3}

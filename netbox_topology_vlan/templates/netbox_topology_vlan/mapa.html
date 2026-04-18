@@ -135,10 +135,8 @@
 
 <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
 <script>
-    // Variável para guardar os dados e poder gerar o XML
     let globalDados = null; 
 
-    // CORES NORMAIS: Router e Switch a Azul (#0d6efd)
     const svgRouter = `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" fill="#0d6efd" stroke="#ffffff" stroke-width="3"/><path d="M50 20v60m30-30H20" stroke="white" stroke-width="8" stroke-linecap="round"/><path d="M40 30l10-10 10 10M40 70l10 10 10-10M30 40l-10 10 10 10M70 40l10 10-10 10" fill="none" stroke="white" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
     const svgSwitch = `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="90" height="60" x="5" y="20" rx="8" fill="#0d6efd" stroke="#ffffff" stroke-width="3"/><path d="M15 45h70M50 45v35" stroke="#ffffff" stroke-width="5"/><circle cx="20" cy="35" r="4" fill="#ffffff"/><circle cx="35" cy="35" r="4" fill="#ffffff"/><circle cx="50" cy="35" r="4" fill="#ffffff"/><circle cx="65" cy="35" r="4" fill="#ffffff"/><circle cx="20" cy="65" r="4" fill="#ffffff"/><circle cx="50" cy="65" r="4" fill="#ffffff"/><circle cx="80" cy="65" r="4" fill="#ffffff"/></svg>`;
     
@@ -187,7 +185,7 @@
     });
 
     function desenharMapa(dados) {
-        globalDados = dados; // Guarda os dados para a exportação XML
+        globalDados = dados; 
 
         const nodes = new vis.DataSet(dados.nos.map(no => ({
             id: no.id, label: no.name, shape: 'image', image: svgToDataUri(getDeviceIcon(no.role)),
@@ -224,7 +222,6 @@
         const canvas = document.querySelector('#mapa-rede canvas');
         if (!canvas) return alert('Por favor, gere o mapa primeiro!');
 
-        // Cria um canvas temporário para aplicar o fundo cinzento (#f1f5f9)
         const tempCanvas = document.createElement('canvas');
         const tempCtx = tempCanvas.getContext('2d');
         tempCanvas.width = canvas.width;
@@ -276,7 +273,6 @@
     // IMPORTAÇÃO GNS3
     // ==========================================
     
-    // Função auxiliar para ir buscar o token de segurança do Django (CSRF)
     function getCookie(name) {
         let cookieValue = null;
         if (document.cookie && document.cookie !== '') {
@@ -292,12 +288,10 @@
         return cookieValue;
     }
 
-    // Quando clicas no botão bonito, ele "clica" no input de ficheiro invisível
     document.getElementById('btnImportGNS3').addEventListener('click', () => {
         document.getElementById('fileGNS3').click();
     });
 
-    // Quando o utilizador escolhe o ficheiro GNS3
     document.getElementById('fileGNS3').addEventListener('change', function(e) {
         const file = e.target.files[0];
         if (!file) return;
@@ -305,14 +299,12 @@
         const formData = new FormData();
         formData.append('file', file);
 
-        // Feedback visual
         document.getElementById('btnImportGNS3').innerHTML = '<i class="mdi mdi-loading mdi-spin"></i> A Importar...';
 
-        // Envia o ficheiro para o backend (vamos criar esta view no próximo passo)
         fetch('/api/plugins/topology-vlan/import-gns3/', {
             method: 'POST',
             headers: {
-                'X-CSRFToken': getCookie('csrftoken') // Muito importante para o Django aceitar!
+                'X-CSRFToken': getCookie('csrftoken') 
             },
             body: formData
         })
@@ -323,16 +315,16 @@
                 alert('Erro na importação: ' + data.Erro);
             } else {
                 alert(`Sucesso! Foram criados ${data.criados} equipamentos.`);
-                location.reload(); // Recarrega a página para atualizar os dados
+                location.reload(); 
             }
         })
         .catch(err => {
             document.getElementById('btnImportGNS3').innerHTML = '<i class="mdi mdi-upload"></i> Importar GNS3';
             console.error(err);
-            alert('Ainda não criámos a API de backend para o GNS3! Avançamos para o views.py?');
+            alert('Erro na importacão');
         });
 
-        e.target.value = ''; // Limpa o input
+        e.target.value = ''; 
     });
 
     window.onload = () => { if (document.getElementById('vlan-select').value) document.getElementById('btn-gerar').click(); };
