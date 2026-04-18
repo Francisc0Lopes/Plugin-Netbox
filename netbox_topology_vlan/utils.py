@@ -18,7 +18,6 @@ def get_vlan(ID_vlan):
         
         # Adicionar Nó
         if not any(n['id'] == Equip.id for n in nos):
-            # Garantir compatibilidade com versões novas do Netbox
             role_obj = getattr(Equip, 'role', getattr(Equip, 'device_role', None))
             nos.append({
                 "id": Equip.id,
@@ -38,20 +37,33 @@ def get_vlan(ID_vlan):
                     remote_interface = peer
                     break
             
-            if isinstance(remote_interface, Interface):#Caso o outro lado seja valido
+            if isinstance(remote_interface, Interface): # Caso o outro lado seja valido
                 
                 is_remote_access = (remote_interface.untagged_vlan == vlan)
                 is_remote_trunk = (vlan in remote_interface.tagged_vlans.all())
+                is_source_trunk = (vlan in interface.tagged_vlans.all())
                 
                 if is_remote_access or is_remote_trunk:
+                    
+                    vlans_permitidas = []
+                # 1.No pop up aparecer que vlans passam na trunk
+
+                    if is_source_trunk:
+                        vlans_permitidas = [str(v.vid) for v in interface.tagged_vlans.all()]
+                    elif is_remote_trunk:
+                        vlans_permitidas = [str(v.vid) for v in remote_interface.tagged_vlans.all()]
+                    
+                    vlans_str = ", ".join(vlans_permitidas) if vlans_permitidas else "N/A"
+
                     ligacoes.append({
                         "source" : Equip.id, 
                         "target" : remote_interface.device.id, 
                         "source_port" : interface.name, 
-                        "source_mode": "Trunk" if vlan in interface.tagged_vlans.all() else "Access",
+                        "source_mode": "Trunk" if is_source_trunk else "Access",
                         "target_port": remote_interface.name,
                         "target_mode": "Trunk" if is_remote_trunk else "Access", 
-                        "stp_state": "Forwarding" 
+                        "stp_state": "Forwarding",
+                        "vlans_trunk": vlans_str  
                     })       
                     
     return {"vlan": vlan.vid, "nos": nos, "ligacoes": ligacoes}

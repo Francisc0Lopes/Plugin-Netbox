@@ -1,4 +1,5 @@
 {% extends 'base/layout.html' %}
+{% include 'netbox_topology_vlan/inc/popup.html' %}
 {% load static %}
 
 {% block title %}Mapa Lógico de VLANs{% endblock %}
@@ -56,6 +57,12 @@
         <div class="popup-body">
             Porta A: <span class="porta-a"></span> (<span class="modo-a"></span>)<br>
             Porta B: <span class="porta-b"></span> (<span class="modo-b"></span>)<br>
+            
+            <div class="trunk-vlans-box" style="display: none; margin-top: 5px;">
+                <span style="color: #f97316; font-weight: bold;">VLANs no Trunk:</span> 
+                <span class="trunk-vlans text-light"></span>
+            </div>
+            
             <div>
                 <span class="badge-estado">Estado: <span class="estado-stp"></span></span>
             </div>
@@ -160,6 +167,13 @@
         div.querySelector('.porta-b').textContent = ligacao.target_port;
         div.querySelector('.modo-b').textContent = ligacao.target_mode;
         div.querySelector('.estado-stp').textContent = ligacao.stp_state || 'Forwarding';
+        //1.No pop up aparecer que vlans passam na trunk 
+        const isTrunk = ligacao.source_mode === 'Trunk' || ligacao.target_mode === 'Trunk';
+        if (isTrunk) {
+            div.querySelector('.trunk-vlans-box').style.display = 'block'; // Mostra a linha
+            div.querySelector('.trunk-vlans').textContent = ligacao.vlans_trunk || 'Todas'; 
+        }
+
 
         return div;
     }
