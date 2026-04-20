@@ -88,30 +88,26 @@
     </div>
     
     <div class="col-md-5">
-        <div class="card h-100 mb-0 bg-dark text-light border-0 shadow-sm">
-            <div class="card-body p-2 d-flex justify-content-around">
+        <div class="card h-100 mb-0 border-0 shadow-lg" style="background: linear-gradient(145deg, #0f172a, #1e293b); border-radius: 12px;">
+            <div class="card-body p-2 d-flex justify-content-around align-items-center">
                 
-                <div class="text-center d-flex flex-column justify-content-center">
-                    <div class="text-uppercase fw-bold text-muted mb-1" style="font-size: 10px; letter-spacing: 1px;">Nós</div>
-                    <div class="fw-bolder text-white" id="stat-nos" style="font-size: 2.2rem; line-height: 1.1;">0</div>
+                <div class="text-center d-flex flex-column align-items-center">
+                    <div class="text-uppercase text-info opacity-75 mb-2" style="font-size: 9px; letter-spacing: 1.5px; font-weight: 800;">Nós</div>
+                    <div class="fw-bolder text-white" id="stat-nos" style="font-size: 2.2rem; line-height: 1.1; text-shadow: 0 0 20px rgba(56,189,248,0.3);">-</div>
                 </div>
 
-                <div class="d-flex align-items-center">
-                    <div class="vr bg-secondary opacity-50" style="height: 45px;"></div>
+                <div style="width: 1px; height: 35px; background: linear-gradient(to bottom, transparent, rgba(255,255,255,0.15), transparent);"></div>
+
+                <div class="text-center d-flex flex-column align-items-center">
+                    <div class="text-uppercase text-info opacity-75 mb-2" style="font-size: 9px; letter-spacing: 1.5px; font-weight: 800;">Ligações</div>
+                    <div class="fw-bolder text-white" id="stat-ligacoes" style="font-size: 2.2rem; line-height: 1.1; text-shadow: 0 0 20px rgba(56,189,248,0.3);">-</div>
                 </div>
 
-                <div class="text-center d-flex flex-column justify-content-center">
-                    <div class="text-uppercase fw-bold text-muted mb-1" style="font-size: 10px; letter-spacing: 1px;">Ligações</div>
-                    <div class="fw-bolder text-white" id="stat-ligacoes" style="font-size: 2.2rem; line-height: 1.1;">0</div>
-                </div>
+                <div style="width: 1px; height: 35px; background: linear-gradient(to bottom, transparent, rgba(255,255,255,0.15), transparent);"></div>
 
-                <div class="d-flex align-items-center">
-                    <div class="vr bg-secondary opacity-50" style="height: 45px;"></div>
-                </div>
-
-                <div class="text-center d-flex flex-column justify-content-center">
-                    <div class="text-uppercase fw-bold text-muted mb-1" style="font-size: 10px; letter-spacing: 1px;">VLAN Ativa</div>
-                    <div class="fw-bolder text-white" id="stat-vlan" style="font-size: 2.2rem; line-height: 1.1;">-</div>
+                <div class="text-center d-flex flex-column align-items-center">
+                    <div class="text-uppercase text-info opacity-75 mb-2" style="font-size: 9px; letter-spacing: 1.5px; font-weight: 800;">VLAN Ativa</div>
+                    <div class="fw-bolder" id="stat-vlan" style="font-size: 2.2rem; line-height: 1.1; color: #38bdf8; text-shadow: 0 0 20px rgba(56,189,248,0.5);">-</div>
                 </div>
 
             </div>

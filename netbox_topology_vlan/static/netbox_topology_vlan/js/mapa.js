@@ -211,7 +211,7 @@ function desenharMapa(dados) {
     var edges = new vis.DataSet(
         dados.ligacoes.map(ligacao => {
             // Lógica de determinação de cor e estilo para Access/Trunk
-            let borderColor = '#198754'; // Default: Verde (Unknown)
+            let borderColor = '#ff0000'; // Default: Vermelho (Unknown)
             let isDashed = false;
 
             console.log(`Ligação ${ligacao.source} ↔ ${ligacao.target}: source_mode=${ligacao.source_mode}, target_mode=${ligacao.target_mode}`);
@@ -219,7 +219,7 @@ function desenharMapa(dados) {
                 borderColor = '#fd7e14'; // Laranja Trunk
                 isDashed = true;
             } else if (ligacao.source_mode === 'Access' || ligacao.target_mode === 'Access') {
-                borderColor = '#0000f9'; // Azul Access
+                borderColor = '#00ff88'; // Verde Access
                 isDashed = true;
             }
             return {
@@ -270,7 +270,6 @@ function desenharMapa(dados) {
     if (params.nodes.length > 0) {
         const nodeId = params.nodes[0];
         const node = nodes.get(nodeId);
-        console.log("Tentando navegar para:", node.url); 
 
         if (node.url) {
             window.location.href = node.url;
