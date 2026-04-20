@@ -1,7 +1,6 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-
 from django.views import View
 from django.http import JsonResponse
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -11,30 +10,24 @@ from ipam.models import VLAN
 from ..utils import get_vlan
 from ..gns3_importer import process_gns3_file
 
-
 class VlanTopologyView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, *args, **kwargs):
-        vlan_id = request.query_params.get('vlan_id')
-        
-        if not vlan_id:
+        vlan_ids_str = request.query_params.get('vlan_id')
+        if not vlan_ids_str:
             return Response({"Erro": "Falta o vlan_id no URL"}, status=400)
         
         try:
-            vlan = VLAN.objects.get(pk=vlan_id)
-        except VLAN.DoesNotExist:
-            return Response({"error": "VLAN não encontrada"}, status=404)
+            vlan_ids = [int(vid.strip()) for vid in vlan_ids_str.split(',')]
+        except ValueError:
+            return Response({"Erro": "Formato de ID inválido"}, status=400)
             
-        resultado = get_vlan(vlan_id) #utils.py
-        
-        if "Erro" in resultado:#Caso VLAN nao exista
+            resultado = get_vlan(vlan_ids, site_id)       
+        if "Erro" in resultado:
             return Response(resultado, status=404)
             
-        return Response(resultado)#devolve mapa
-    
-
-
+        return Response(resultado)
 
 @method_decorator(csrf_exempt, name='dispatch')
 class ImportGNS3View(LoginRequiredMixin, View):
