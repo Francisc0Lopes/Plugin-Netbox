@@ -56,7 +56,7 @@
                                 class="form-select form-select-sm"
                                 multiple 
                                 size="3" 
-                                style="height: 60px;" 
+                                style="height: 65px; overflow-y: auto;" 
                                 disabled>
                             {% for v in vlans %}
                                 <option value="{{ v.id }}" data-site="{{ v.site.id|default:'' }}">
@@ -66,17 +66,20 @@
                         </select>
 
                         <small id="vlan-help-text"
-                               class="text-danger fw-bold"
-                               style="font-size: 10px; position: absolute; margin-top: 62px;">
-                            ⚠ Selecione um Site primeiro
+                            class="text-info fw-bold mt-1"
+                            style="font-size: 10px; white-space: nowrap;">
+                            (Clique para selecionar. Não precisa de CTRL)
                         </small>
                     </div>
 
                     <button id="btn-gerar"
                             class="btn btn-sm btn-primary ms-2"
-                            style="height: 60px;"
+                            style="height: 65px; min-width: 80px;"
                             disabled>
-                        <i class="mdi mdi-refresh"></i> Gerar
+                        <div>
+                            <i class="mdi mdi-refresh fs-5"></i><br>
+                            <span style="font-size: 10px;">Gerar</span>
+                        </div>
                     </button>
                 </div>
 
