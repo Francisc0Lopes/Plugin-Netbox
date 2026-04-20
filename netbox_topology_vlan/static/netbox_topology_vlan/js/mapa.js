@@ -270,7 +270,7 @@ function desenharMapa(dados) {
     if (params.nodes.length > 0) {
         const nodeId = params.nodes[0];
         const node = nodes.get(nodeId);
-        console.log("Tentando navegar para:", node.url); // Debug
+        console.log("Tentando navegar para:", node.url); 
 
         if (node.url) {
             window.location.href = node.url;
