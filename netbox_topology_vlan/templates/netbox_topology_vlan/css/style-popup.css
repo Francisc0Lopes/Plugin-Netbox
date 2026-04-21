@@ -1,34 +1,37 @@
 div.vis-tooltip {
     position: absolute;
     visibility: hidden;
-    padding: 15px;
-    background-color: #1b1b22; /* Fundo dark */
-    color: #e2e8f0; /* Texto claro */
-    border: 1px solid #334155;
-    border-radius: 8px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.4);
-    z-index: 1000;
-    font-family: var(--font-family-sans-serif, Arial, sans-serif);
+    padding: 15px !important;
+    background-color: #1b1b22 !important; /* Fundo dark forçado */
+    color: #e2e8f0 !important; /* Texto claro forçado */
+    border: 1px solid #334155 !important;
+    border-radius: 8px !important;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.6) !important;
+    z-index: 1000 !important;
+    font-family: var(--font-family-sans-serif, Arial, sans-serif) !important;
     pointer-events: none;
-    min-width: 220px;
+    min-width: 220px !important;
 }
+
 .popup-header {
-    color: #ffffff;
-    border-bottom: 1px solid #334155;
+    color: #ffffff !important;
+    border-bottom: 1px solid #334155 !important;
     display: block;
     margin-bottom: 10px;
     padding-bottom: 8px;
     font-size: 15px;
     font-weight: 600;
 }
+
 .popup-body {
     font-size: 13px;
     line-height: 1.8;
 }
+
 /* A Badge verde escura do estado */
 .badge-estado {
-    background-color: #14532d;
-    color: #4ade80;
+    background-color: #14532d !important;
+    color: #4ade80 !important;
     padding: 4px 10px;
     border-radius: 4px;
     font-weight: 600;

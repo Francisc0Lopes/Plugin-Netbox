@@ -4,95 +4,79 @@
 {% block title %}Mapa Lógico de VLANs{% endblock %}
 
 {% block content %}
-
 {% include 'netbox_topology_vlan/inc/popup.html' %}
 
-<div class="row mb-2">
-    <div class="col-md-12">
-        <div class="d-flex justify-content-between align-items-center">
-            <h4 class="mb-0"><i class="fas fa-network-wired"></i> Mapa de VLANs</h4>
-            <div class="d-flex gap-2">
-                <input type="file" id="fileGNS3" style="display: none;" accept=".gns3">
-                <button id="btnImportGNS3" class="btn btn-sm btn-warning">
-                    <i class="mdi mdi-upload"></i> Importar GNS3
-                </button>
-                
-                <button id="btnDownloadXML" class="btn btn-sm btn-info"><i class="mdi mdi-download"></i> XML</button>
-                <button id="btnDownloadPNG" class="btn btn-sm btn-info"><i class="mdi mdi-image"></i> PNG</button>
-            </div>
-        </div>
-        <hr class="mt-2 mb-2">
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0"><i class="fas fa-network-wired"></i> Mapa de VLANs</h4>
+    <div class="d-flex gap-2">
+        <input type="file" id="fileGNS3" style="display: none;" accept=".gns3">
+        <button id="btnImportGNS3" class="btn btn-sm btn-warning"><i class="mdi mdi-upload"></i> Importar GNS3</button>
+        <button id="btnDownloadGNS3" class="btn btn-sm btn-success"><i class="mdi mdi-download"></i> Exportar GNS3</button>
+        <button id="btnDownloadXML" class="btn btn-sm btn-info"><i class="mdi mdi-code-tags"></i> XML</button>
+        <button id="btnDownloadPNG" class="btn btn-sm btn-info"><i class="mdi mdi-image"></i> PNG</button>
     </div>
 </div>
 
-<div class="row mb-2">
-    <div class="col-md-7">
-    <div class="card mb-0">
-        <div class="card-body p-2 d-flex align-items-center">
-            
-            <div class="d-flex align-items-center me-4">
-                <strong class="mb-0 me-2 text-muted" style="font-size: 13px;">1. Site:</strong>
-                <select id="site-select" class="form-select form-select-sm" style="width: 170px;">
-                    <option value="">-- Escolha o Site --</option>
-                    {% for s in sites %}
-                        <option value="{{ s.id }}">{{ s.name }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-
-            <div class="d-flex flex-grow-1 align-items-center">
-                <strong class="mb-0 me-2 text-muted" style="font-size: 13px;">2. VLAN(s):</strong>
-                <div class="d-flex gap-2 flex-grow-1 flex-column">
-                    <select id="vlan-select" class="form-select form-select-sm" multiple size="3" disabled>
-                        {% for v in vlans %}
-                            <option value="{{ v.id }}" data-site="{{ v.site.id|default:'' }}" {% if selected_vlan_id == v.id|stringformat:"s" %}selected{% endif %}>
-                                VLAN {{ v.vid }} - {{ v.name }}
-                            </option>
+<div class="row mb-3">
+    <div class="col-md-8">
+        <div class="card mb-0 shadow-sm">
+            <div class="card-body p-3 d-flex align-items-start gap-4">
+                
+                <div style="min-width: 200px;">
+                    <label class="form-label text-muted fw-bold mb-1" style="font-size: 12px;">1. Site:</label>
+                    <select id="site-select" class="form-select form-select-sm">
+                        <option value="">-- Escolha o Site --</option>
+                        {% for s in sites %}
+                            <option value="{{ s.id }}">{{ s.name }}</option>
                         {% endfor %}
                     </select>
-                    <small id="vlan-help-text" class="text-danger fw-bold" style="font-size: 10px; margin-top: -5px;">⚠ Selecione um Site primeiro</small>
                 </div>
-                <button id="btn-gerar" class="btn btn-sm btn-primary text-nowrap ms-2" style="height: 100%;" disabled>
-                    <i class="mdi mdi-refresh"></i> Gerar
-                </button>
+
+                <div class="flex-grow-1">
+                    <label class="form-label text-muted fw-bold mb-1" style="font-size: 12px;">2. VLANs deste Site:</label>
+                    <div id="vlan-checkbox-list" class="border rounded p-2" style="height: 110px; overflow-y: auto; background-color: var(--bs-body-bg); border-color: var(--bs-border-color) !important;">
+                        <div class="text-muted small mt-3 text-center" id="vlan-loading-msg">Selecione um site para pesquisar as VLANs.</div>
+                    </div>
+                    <small id="vlan-help-text" class="text-danger fw-bold d-block mt-1" style="font-size: 11px;">⚠ Selecione um Site primeiro</small>
+                </div>
+
+                <div class="d-flex align-items-center mt-4">
+                    <button id="btn-gerar" class="btn btn-primary px-4 py-2 shadow-sm" disabled>
+                        <i class="mdi mdi-refresh"></i> Gerar
+                    </button>
+                </div>
+
             </div>
-            
         </div>
     </div>
-</div>
-    
-    <div class="col-md-5">
-        <div class="card mb-0 bg-dark text-light" style="height: 100%;"> 
+
+    <div class="col-md-4">
+        <div class="card mb-0 bg-dark text-light shadow-sm" style="height: 100%;"> 
             <div class="card-body p-2 d-flex justify-content-around align-items-center">
                 <div class="text-center">
-                    <div class="text-uppercase fw-bold stat-label" style="font-size: 10px; color: #adb5bd;">Nós</div>
-                    <div class="fw-bolder stat-value" id="stat-nos" style="font-size: 15px;">0</div>
+                    <div class="text-muted fw-bold" style="font-size: 10px;">NÓS</div>
+                    <div class="fw-bolder fs-4" id="stat-nos">0</div>
                 </div>
                 <div class="text-center">
-                    <div class="text-uppercase fw-bold stat-label" style="font-size: 10px; color: #adb5bd;">Ligações</div>
-                    <div class="fw-bolder stat-value" id="stat-ligacoes" style="font-size: 15px;">0</div>
+                    <div class="text-muted fw-bold" style="font-size: 10px;">LIGAÇÕES</div>
+                    <div class="fw-bolder fs-4" id="stat-ligacoes">0</div>
                 </div>
                 <div class="text-center">
-                    <div class="text-uppercase fw-bold stat-label" style="font-size: 10px; color: #adb5bd;">VLAN Ativa</div>
-                    <div class="fw-bolder stat-value" id="stat-vlan" style="font-size: 15px;">-</div>
+                    <div class="text-muted fw-bold" style="font-size: 10px;">VLAN ATIVA</div>
+                    <div class="fw-bolder fs-4 text-info" id="stat-vlan">-</div>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<div class="row">
-    <div class="col-md-12">
-        <div class="card">
-            <div class="card-body p-0">
-                <div id="mapa-rede" style="width: 100%; height: 650px; background-color: #f1f5f9; border-radius: 4px; border: 1px solid #dee2e6;"></div>
-            </div>
-        </div>
+<div class="card shadow-sm border-0">
+    <div class="card-body p-0">
+        <div id="mapa-rede" style="width: 100%; height: 600px; background-color: var(--bs-body-bg); border-radius: 4px; border: 1px solid var(--bs-border-color) !important;"></div>
     </div>
 </div>
 
 <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
-
 <script type="text/javascript" src="{% static 'netbox_topology_vlan/js/mapa.js' %}"></script>
 
 {% endblock %}

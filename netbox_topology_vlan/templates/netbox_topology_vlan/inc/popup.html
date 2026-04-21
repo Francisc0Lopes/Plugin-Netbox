@@ -1,3 +1,6 @@
+<style>
+    {% include 'netbox_topology_vlan/css/style-popup.css' %}
+</style>
 <template id="edge-popup-template">
     <div>
         <strong class="popup-header">
@@ -8,7 +11,6 @@
             Porta <span class="porta-b"></span> (<span class="modo-b"></span>)<br>
 
 
-            <!-- 1.No pop up aparecer que vlans passam na trunk -->
             <div class="trunk-vlans-box" style="display: none; margin-top: 5px;">
                 <span style="color: #f97316; font-weight: bold;">VLANs no Trunk:</span> 
                 <span class="trunk-vlans text-light"></span>
