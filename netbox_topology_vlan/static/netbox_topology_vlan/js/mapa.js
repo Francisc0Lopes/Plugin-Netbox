@@ -1,62 +1,125 @@
-let globalDados = null;
+let globalDados = null; 
 
-// =========================
-// MULTI SELECT SEM CTRL
-// =========================
-document.getElementById('vlan-select').addEventListener('mousedown', function(e) {
-    if (e.target.tagName === 'OPTION') {
-        e.preventDefault();
-        e.target.selected = !e.target.selected;
-    }
-});
-
-// ==========================================
-// LÓGICA DE DESBLOQUEIO E FILTRO DE SITES
-// ==========================================
-
-document.getElementById('site-select').addEventListener('change', function(e) {
-    const siteId = e.target.value;
-    const vlanSelect = document.getElementById('vlan-select');
-    const btnGerar = document.getElementById('btn-gerar');
-    const helpText = document.getElementById('vlan-help-text');
+// A vacina: O código só corre quando a página estiver 100% carregada no browser
+document.addEventListener('DOMContentLoaded', function() {
     
-    // Se o utilizador voltar a "Escolher o Site" (vazio), tranca tudo de novo
-    if (!siteId) {
-        vlanSelect.disabled = true;
-        btnGerar.disabled = true;
-        if(helpText) {
-            helpText.textContent = "⚠ Selecione um Site primeiro";
-            helpText.className = "text-danger fw-bold";
-        }
-        return;
-    }
+    const siteSelect = document.getElementById('site-select');
+    const btnGerar = document.getElementById('btn-gerar');
+    const vlanList = document.getElementById('vlan-checkbox-list');
+    const helpText = document.getElementById('vlan-help-text');
 
-    // Se escolheu um site válido, destranca!
-    vlanSelect.disabled = false;
-    btnGerar.disabled = false;
-    if(helpText) {
-        helpText.textContent = "(Clique para selecionar. Não precisa de CTRL)";
-        helpText.className = "text-success fw-bold";
-    }
+    if (!siteSelect || !btnGerar) return; // Segurança extra
 
-    // Mostra só as VLANs deste Site (ou VLANs globais que não tenham site atribuído)
-    const options = vlanSelect.options;
-    for (let i = 0; i < options.length; i++) {
-        const opt = options[i];
-        const optSite = opt.getAttribute('data-site');
+    // ==========================================
+    // 1. PESQUISA DAS VLANS QUANDO O SITE MUDA
+    // ==========================================
+    siteSelect.addEventListener('change', function(e) {
+        const siteId = e.target.value;
         
-        if (!optSite || optSite === siteId) {
-            opt.style.display = ''; // Mostra
-        } else {
-            opt.style.display = 'none'; // Esconde as que são de outros sites
-            opt.selected = false;       // Garante que são desmarcadas
+        // Se o utilizador voltar a escolher "-- Escolha o Site --"
+        if (!siteId) {
+            vlanList.innerHTML = '<div class="text-muted small mt-3 text-center">Selecione um site para pesquisar as VLANs.</div>';
+            btnGerar.disabled = true;
+            if(helpText) {
+                helpText.textContent = "⚠ Selecione um Site primeiro";
+                helpText.className = "text-danger fw-bold mt-1";
+            }
+            return;
         }
-    }
-});
 
-// =========================
-// SVG ICONS
-// =========================
+        // Animação visual enquanto espera pela resposta do servidor
+        vlanList.innerHTML = '<div class="text-info small mt-3 text-center"><i class="mdi mdi-loading mdi-spin"></i> A pesquisar VLANs ativas neste site...</div>';
+        btnGerar.disabled = true;
+
+        // Vai à nova API buscar as VLANs ativas nas portas deste Site
+        fetch(`/api/plugins/topology-vlan/get-site-vlans/?site_id=${siteId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.length === 0) {
+                    vlanList.innerHTML = '<div class="text-danger small mt-3 text-center fw-bold">Nenhuma VLAN configurada neste site.</div>';
+                    if(helpText) {
+                        helpText.textContent = "Sem dados para desenhar.";
+                        helpText.className = "text-danger fw-bold mt-1";
+                    }
+                    return;
+                }
+                
+                // Constrói as caixas de seleção (Checkboxes) com base na resposta do servidor
+                let html = '';
+                data.forEach(v => {
+                    html += `
+                    <div class="form-check vlan-item mb-1">
+                        <input class="form-check-input vlan-checkbox" type="checkbox" value="${v.id}" id="vlanCheck${v.id}">
+                        <label class="form-check-label fw-bold" for="vlanCheck${v.id}" style="font-size: 13px; cursor: pointer;">
+                            VLAN ${v.vid} - ${v.name}
+                        </label>
+                    </div>`;
+                });
+                
+                vlanList.innerHTML = html;
+                btnGerar.disabled = false;
+                
+                if(helpText) {
+                    helpText.textContent = "✓ Pode marcar as redes que quer juntar";
+                    helpText.className = "text-success fw-bold mt-1";
+                }
+            })
+            .catch(err => {
+                vlanList.innerHTML = '<div class="text-danger small mt-3 text-center">Erro ao comunicar com o servidor.</div>';
+            });
+    });
+
+    // ==========================================
+    // 2. BOTÃO GERAR O MAPA
+    // ==========================================
+    btnGerar.addEventListener('click', function() {
+        // Apanha apenas as caixas que têm o 'certo' marcado
+        const selecionadas = document.querySelectorAll('.vlan-checkbox:checked');
+        if (selecionadas.length === 0) return alert('Selecione pelo menos uma VLAN na checklist.');
+
+        // Junta os IDs por vírgulas (Ex: "10,20")
+        const vlanIds = Array.from(selecionadas).map(cb => cb.value).join(',');
+        const siteId = siteSelect.value;
+
+        // Efeito visual de "A Carregar"
+        document.getElementById('mapa-rede').style.opacity = '0.5';
+        
+        // Pede os dados da Topologia ao servidor
+        fetch(`/api/plugins/topology-vlan/get-topology/?vlan_id=${vlanIds}&site_id=${siteId}`)
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('mapa-rede').style.opacity = '1';
+                if (data.Erro) return alert(data.Erro);
+                
+                // Atualiza as caixas pretas de estatísticas
+                document.getElementById('stat-nos').innerText = data.nos.length;
+                document.getElementById('stat-ligacoes').innerText = data.ligacoes.length;
+                const statVlan = document.getElementById('stat-vlan');
+                const totalCheckboxes = Array.from(document.querySelectorAll('.vlan-checkbox')).filter(cb => {
+                    const parent = cb.closest('.vlan-item');
+                    return parent && parent.style.display !== 'none';
+                }).length;                
+                const totalSelecionadas = selecionadas.length;
+
+                if (totalSelecionadas === 0) {
+                    statVlan.innerText = "Nenhuma";
+                } else if (totalSelecionadas === totalCheckboxes) {
+                    statVlan.innerText = "Todas";
+                } else if (totalSelecionadas > 3) {
+                    statVlan.innerText = totalSelecionadas + " VLANs";
+                } else {
+                    statVlan.innerText = data.vlan; 
+                }
+
+
+                // Envia para o Vis.js desenhar
+                desenharMapa(data);
+            });
+    });
+
+    // ==========================================
+    // 3. DESENHO DO MAPA E ÍCONES (Vis.js)
+    // ==========================================
 
 const svgRouter = `
     <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
@@ -111,269 +174,356 @@ const svgComputer =  `
         <circle cx="70" cy="75" r="1.5" fill="#ffffff"/>
     </svg>`;
 
-const svgUnknown = `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
-        <rect x="10" y="20" width="80" height="60" rx="5" fill="#6c757d" stroke="#ffffff" stroke-width="2"/>
-        <text x="50" y="60" text-anchor="middle" fill="white" font-size="40" font-family="Arial" dy=".3em">?</text>
-    </svg>`;
+    const svgUnknown = `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
+            <rect x="10" y="20" width="80" height="60" rx="5" fill="#6c757d" stroke="#ffffff" stroke-width="2"/>
+            <text x="50" y="60" text-anchor="middle" fill="white" font-size="40" font-family="Arial" dy=".3em">?</text>
+        </svg>`;
 
-function svgToDataUri(svg) {
-    return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
-}
-
-const roleMatchers = [
-    { match: r => r.includes('router'), icon: svgRouter },
-    { match: r => r.includes('switch'), icon: svgSwitch },
-    { match: r => r.includes('server'), icon: svgServer },
-    { match: r => r.includes('pc') || r.includes('computer') || r.includes('notebook'), icon: svgComputer },
-];
-
-function getDeviceIcon(role) {
-    role = (role || "").toLowerCase();
-    const found = roleMatchers.find(r => r.match(role));
-    return found ? found.icon : svgUnknown;
-}
-
-function criarPopup(ligacao) {
-    const template = document.getElementById('edge-popup-template');
-    const clone = template.content.cloneNode(true);
-    const div = document.createElement('div');
-    div.appendChild(clone);
-
-    div.querySelector('.porta-a').textContent = ligacao.source_port;
-    div.querySelector('.modo-a').textContent = ligacao.source_mode;
-    div.querySelector('.porta-b').textContent = ligacao.target_port;
-    div.querySelector('.modo-b').textContent = ligacao.target_mode;
-    div.querySelector('.estado-stp').textContent = ligacao.stp_state || 'Forwarding';
-        
-    const isTrunk = ligacao.source_mode === 'Trunk' || ligacao.target_mode === 'Trunk';
-    if (isTrunk) {
-        div.querySelector('.trunk-vlans-box').style.display = 'block';
-        div.querySelector('.trunk-vlans').textContent = ligacao.vlans_trunk || 'Todas'; 
+    function svgToDataUri(svg) {
+        return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
     }
-    return div;
+
+    const roleMatchers = [
+        { match: r => r.includes('router'), icon: svgRouter },
+        { match: r => r.includes('switch'), icon: svgSwitch },
+        { match: r => r.includes('server'), icon: svgServer },
+        { match: r => r.includes('pc') || r.includes('computer') || r.includes('notebook'), icon: svgComputer },
+    ];
+
+    function getDeviceIcon(role) {
+        role = (role || "").toLowerCase();
+        const found = roleMatchers.find(r => r.match(role));
+        return found ? found.icon : svgUnknown;
 }
 
+    // Constrói o balão de informação quando se passa o rato na ligação
+    function criarPopup(ligacao) {
+        const template = document.getElementById('edge-popup-template');
+        if(!template) return document.createElement('div');
+        
+        const clone = template.content.cloneNode(true);
+        const div = document.createElement('div');
+        div.appendChild(clone);
 
-// ==========================================
-// BOTÃO GERAR 
-// ==========================================
-
-document.getElementById('btn-gerar').addEventListener('click', function() {
-    const selecionadas = Array.from(document.getElementById('vlan-select').selectedOptions);
-    if (selecionadas.length === 0) return alert('Por favor, selecione pelo menos uma VLAN.');
-
-    const vlanIds = selecionadas.map(opt => opt.value).join(',');
-    // Vai buscar o Site escolhido (se existir)
-    const siteElement = document.getElementById('site-select');
-    const siteId = siteElement ? siteElement.value : '';
-
-    document.getElementById('mapa-rede').style.opacity = '0.5';
-    
-    // Envia agora os DOIS parâmetros para a API: vlan_id e site_id
-    fetch(`/api/plugins/topology-vlan/get-topology/?vlan_id=${vlanIds}&site_id=${siteId}`)
-        .then(response => response.json())
-        .then(data => {
-            document.getElementById('mapa-rede').style.opacity = '1';
-            if (data.Erro) return alert(data.Erro);
-            globalDados = data;
-            document.getElementById('stat-nos').innerText = data.nos.length;
-            document.getElementById('stat-ligacoes').innerText = data.ligacoes.length;
-            document.getElementById('stat-vlan').innerText = data.vlan;
-
-            desenharMapa(data);
-        });
-});
-
-// =========================
-// DESENHAR MAPA
-// =========================
+        div.querySelector('.porta-a').textContent = ligacao.source_port;
+        div.querySelector('.modo-a').textContent = ligacao.source_mode;
+        div.querySelector('.porta-b').textContent = ligacao.target_port;
+        div.querySelector('.modo-b').textContent = ligacao.target_mode;
+        div.querySelector('.estado-stp').textContent = ligacao.stp_state || 'Forwarding';
+        
+        // Se a porta for Trunk, acende a informação das VLANs no popup
+        const isTrunk = ligacao.source_mode === 'Trunk' || ligacao.target_mode === 'Trunk';
+        if (isTrunk) {
+            div.querySelector('.trunk-vlans-box').style.display = 'block';
+            div.querySelector('.trunk-vlans').textContent = ligacao.vlans_trunk || 'Todas'; 
+        }
+        return div;
+    }
 
 function desenharMapa(dados) {
+    globalDados = dados;
 
-    var nodes = new vis.DataSet(
-        dados.nos.map(no => {
-            return {
-                id: no.id,
-                label: no.name,
-                url : no.url,
-                shape: 'image',
-                image: svgToDataUri(getDeviceIcon(no.role)), 
-                font: { 
-                    color: '#ffffff',
-                    size: 14,
-                    face: 'monospace',
-                },
-                shadow: { enabled: true, color: 'rgba(0,0,0,0.5)', size: 8 }
-            };
-        })
+    const nodes = new vis.DataSet(
+        dados.nos.map(no => ({
+            id: no.id,
+            label: no.name,
+            url: no.url,
+            shape: 'image',
+            image: svgToDataUri(getDeviceIcon(no.role)),
+            font: { 
+                color: '#ffffff',
+                size: 14,
+                face: 'monospace',
+            },
+            shadow: { 
+                enabled: true, 
+                color: 'rgba(0,0,0,0.4)', 
+                size: 8
+            }
+        }))
     );
 
-    var edges = new vis.DataSet(
-        dados.ligacoes.map(ligacao => {
-            // Lógica de determinação de cor e estilo para Access/Trunk
-            let borderColor = '#ff0000'; // Default: Vermelho (Unknown)
-            let isDashed = false;
+    const edges = new vis.DataSet(dados.ligacoes.map(ligacao => {
+    const isTrunk = ligacao.source_mode === 'Trunk' || ligacao.target_mode === 'Trunk';
+    const corLigacao = isTrunk ? '#f97316' : '#64748b'; // Laranja para Trunk, Cinza para Access
 
-            console.log(`Ligação ${ligacao.source} ↔ ${ligacao.target}: source_mode=${ligacao.source_mode}, target_mode=${ligacao.target_mode}`);
-            if (ligacao.source_mode === 'Trunk' || ligacao.target_mode === 'Trunk') {
-                borderColor = '#fd7e14'; // Laranja Trunk
-                isDashed = true;
-            } else if (ligacao.source_mode === 'Access' || ligacao.target_mode === 'Access') {
-                borderColor = '#00ff88'; // Verde Access
-                isDashed = true;
-            }
             return {
                 from: ligacao.source,
                 to: ligacao.target,
-                label: ligacao.source_port + ' ↔ ' + ligacao.target_port,
+                label: `${ligacao.source_port} ↔ ${ligacao.target_port}`,
                 title: criarPopup(ligacao),
-                dashes: isDashed, 
+                dashes: isTrunk,
                 color: { 
-                    color: borderColor,
+                    color: corLigacao,
                     highlight: '#00d4ff',
                     hover: '#ffffff'
                 },
                 width: 3,
                 font: { 
-                    align: 'top', 
-                    size: 9, 
-                    color: '#adb5bd' 
+                    align: 'top',
+                    size: 6,
+                    color: '#ffffff',
+                    strokeColor: '#1e1e24',
+                    face: 'monospace',
                 },
                 shadow: true
             };
         })
     );
 
-    var container = document.getElementById('mapa-rede');
-    var data = { nodes: nodes, edges: edges };
-        
-    var options = {
-        physics: { 
+    const container = document.getElementById('mapa-rede');
+    const data = { nodes, edges };
+
+    const options = {
+        physics: {
             enabled: true,
-            barnesHut: { 
-                gravitationalConstant: -7000, 
-                springLength: 200,
-                springConstant: 0.04
+            forceAtlas2Based: {
+                gravitationalConstant: -10000,
+                springLength: 350,
+                springConstant: 1
             },
-            stabilization: { iterations: 150 }
+            stabilization: { iterations: 200 }
         },
         interaction: {
             hover: true,
-            navigationButtons: true, // Adiciona botões de zoom profissionais
+            navigationButtons: true,
             keyboard: true
         }
     };
 
-    var network = new vis.Network(container, data, options);
+    const network = new vis.Network(container, data, options);
 
+    // Evento de duplo clique para navegação
     network.on("doubleClick", function (params) {
-    if (params.nodes.length > 0) {
-        const nodeId = params.nodes[0];
-        const node = nodes.get(nodeId);
-
-        if (node.url) {
-            window.location.href = node.url;
+        if (params.nodes.length > 0) {
+            const node = nodes.get(params.nodes[0]);
+            if (node.url) {
+                window.location.href = node.url;
             }
         }
     });
 }
 
-// =========================
-// DOWNLOAD PNG
-// =========================
+    // ==========================================
+    // 4. BOTÕES DE EXPORTAÇÃO E IMPORTAÇÃO
+    // ==========================================
+    
+    // EXPORTAR PNG
+    const btnDownloadPNG = document.getElementById('btnDownloadPNG');
+    if(btnDownloadPNG) {
+        btnDownloadPNG.addEventListener('click', function() {
+            const canvas = document.querySelector('#mapa-rede canvas');
+            if (!canvas) return alert('Por favor, gere o mapa primeiro!');
+            
+            const tempCanvas = document.createElement('canvas');
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCanvas.width = canvas.width; tempCanvas.height = canvas.height;
+            tempCtx.fillStyle = '#1e1e24'; // Fundo Dark Theme
+            tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+            tempCtx.drawImage(canvas, 0, 0);
+            
+            const link = document.createElement('a');
+            link.download = 'Topologia_VLAN.png'; 
+            link.href = tempCanvas.toDataURL('image/png'); 
+            link.click();
+        });
+    }
 
-document.getElementById('btnDownloadPNG').addEventListener('click', function() {
+    // EXPORTAR XML
+    const btnDownloadXML = document.getElementById('btnDownloadXML');
+    if(btnDownloadXML) {
+        btnDownloadXML.addEventListener('click', function() {
+            if (!globalDados) return alert('Por favor, gere o mapa primeiro!');
+            let xml = '<?xml version="1.0" encoding="UTF-8"?>\n<topologia>\n  <nos>\n';
+            
+            globalDados.nos.forEach(no => {
+                xml += `    <no id="${no.id}" nome="${no.name.replace(/&/g, '&amp;').replace(/</g, '&lt;')}" role="${no.role}" />\n`;
+            });
+            xml += '  </nos>\n  <ligacoes>\n';
+            globalDados.ligacoes.forEach(lig => {
+                xml += `    <ligacao source="${lig.source}" target="${lig.target}" source_port="${lig.source_port}" target_port="${lig.target_port}" source_mode="${lig.source_mode}" target_mode="${lig.target_mode}" stp_state="${lig.stp_state}" />\n`;
+            });
+            xml += '  </ligacoes>\n</topologia>';
+            
+            const blob = new Blob([xml], { type: 'text/xml;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a'); 
+            link.download = 'Topologia_VLAN.xml'; 
+            link.href = url; 
+            link.click(); 
+            URL.revokeObjectURL(url);
+        });
+    }
 
-    const canvas = document.querySelector('#mapa-rede canvas');
-    if (!canvas) return alert('Gera primeiro o mapa');
+// ==========================================
+    // EXPORTAR PARA GNS3 (.gns3)
+    // ==========================================
+    const btnDownloadGNS3 = document.getElementById('btnDownloadGNS3');
+    if (btnDownloadGNS3) {
+        btnDownloadGNS3.addEventListener('click', function() {
+            if (!globalDados || globalDados.nos.length === 0) return alert('Por favor, gere o mapa primeiro antes de exportar.');
 
-    const link = document.createElement('a');
-    link.download = 'topologia.png';
-    link.href = canvas.toDataURL();
-    link.click();
-});
+            const uuidv4 = () => {
+                return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                    const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+                    return v.toString(16);
+                });
+            };
 
-// =========================
-// DOWNLOAD XML
-// =========================
+            // Esqueleto GNS3 rigoroso
+            const gns3Project = {
+                "name": "Topologia_Exportada_NetBox",
+                "project_id": uuidv4(),
+                "version": "2.2.0", 
+                "type": "topology",
+                "revision": 9,
+                "topology": {
+                    "computes": [],
+                    "drawings": [],
+                    "links": [],
+                    "nodes": []
+                }
+            };
 
-document.getElementById('btnDownloadXML').addEventListener('click', function() {
+            const nodeUuids = {};
+            const portCounters = {}; 
 
-    if (!globalDados) return alert('Gera primeiro o mapa');
+            globalDados.nos.forEach((no, index) => {
+                const nUuid = uuidv4();
+                nodeUuids[no.id] = nUuid; 
+                portCounters[nUuid] = 0; 
 
-    let xml = '<topologia>';
+                const posX = (index % 3) * 200 - 300;
+                const posY = Math.floor(index / 3) * 200 - 300;
+                
+                // Prevenção contra nomes nulos na Base de Dados
+                const safeName = no.name ? String(no.name) : ("Dispositivo_" + index);
 
-    globalDados.nos.forEach(n => {
-        xml += `<no id="${n.id}" nome="${n.name}" />`;
-    });
+                const role = (no.role || "").toLowerCase();
+                let nodeType = "ethernet_switch"; 
+                let symbol = ":/symbols/ethernet_switch.svg";
+                let consoleType = "none";
 
-    globalDados.ligacoes.forEach(l => {
-        xml += `<ligacao source="${l.source}" target="${l.target}" />`;
-    });
+                if (role.includes('router')) { 
+                    symbol = ":/symbols/router.svg"; 
+                    // Exportamos como switch genérico mas com símbolo de Router 
+                    // para não rebentar com templates locais de QEMU do utilizador
+                } 
+                else if (role.includes('pc') || role.includes('host')) { 
+                    nodeType = "vpcs"; 
+                    symbol = ":/symbols/computer.svg"; 
+                    consoleType = "telnet";
+                }
 
-    xml += '</topologia>';
+                // Node construído com as regras estritas do Schema JSON do GNS3
+                gns3Project.topology.nodes.push({
+                    "compute_id": "local",
+                    "console": consoleType === "none" ? null : (5000 + index), // Switches não podem ter consola
+                    "console_auto_start": false,
+                    "console_type": consoleType,
+                    "custom_adapters": [],
+                    "first_port_name": null,
+                    "height": 59,
+                    "label": {
+                        "rotation": 0,
+                        "style": "font-family: TypeWriter;font-size: 10.0;font-weight: bold;fill: #000000;fill-opacity: 1.0;",
+                        "text": safeName,
+                        "x": 10,
+                        "y": -25
+                    },
+                    "locked": false,
+                    "name": safeName,
+                    "node_id": nUuid,
+                    "node_type": nodeType,
+                    "port_name_format": "Ethernet{0}",
+                    "port_segment_size": 0,
+                    "properties": {},
+                    "symbol": symbol,
+                    "width": 66,
+                    "x": posX,
+                    "y": posY,
+                    "z": 1
+                });
+            });
 
-    const blob = new Blob([xml], { type: 'text/xml' });
+            globalDados.ligacoes.forEach(lig => {
+                const idSource = nodeUuids[lig.source];
+                const idTarget = nodeUuids[lig.target];
 
-    const link = document.createElement('a');
-    link.download = 'topologia.xml';
-    link.href = URL.createObjectURL(blob);
-    link.click();
-});
+                if (idSource && idTarget) {
+                    const portSource = portCounters[idSource]++;
+                    const portTarget = portCounters[idTarget]++;
 
-function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-            const cookie = cookies[i].trim();
-            if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
+                    gns3Project.topology.links.push({
+                        "link_id": uuidv4(),
+                        "nodes": [
+                            { "adapter_number": 0, "node_id": idSource, "port_number": portSource },
+                            { "adapter_number": 0, "node_id": idTarget, "port_number": portTarget }
+                        ]
+                    });
+                }
+            });
+
+            const blob = new Blob([JSON.stringify(gns3Project, null, 4)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.download = 'Topologia_NetBox.gns3';
+            link.href = url;
+            link.click();
+            URL.revokeObjectURL(url);
+        });
+    }
+
+
+    // IMPORTAR GNS3
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
             }
         }
+        return cookieValue;
     }
-    return cookieValue;
-}
 
-document.getElementById('btnImportGNS3').addEventListener('click', () => {
-    document.getElementById('fileGNS3').click();
-});
-
-document.getElementById('fileGNS3').addEventListener('change', function(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    const formData = new FormData();
-    formData.append('file', file);
-    document.getElementById('btnImportGNS3').innerHTML = '<i class="mdi mdi-loading mdi-spin"></i> A Importar...';
-
-    fetch('/api/plugins/topology-vlan/import-gns3/', {
-        method: 'POST',
-        headers: { 'X-CSRFToken': getCookie('csrftoken') },
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        document.getElementById('btnImportGNS3').innerHTML = '<i class="mdi mdi-upload"></i> Importar GNS3';
-        if (data.Erro) alert('Erro na importação: ' + data.Erro);
-        else { alert(`Sucesso! Foram criados ${data.criados} equipamentos.`); location.reload(); }
-    })
-    .catch(err => {
-        document.getElementById('btnImportGNS3').innerHTML = '<i class="mdi mdi-upload"></i> Importar GNS3';
-        console.error(err); alert('Erro na importacão');
-    });
-    e.target.value = ''; 
-});
-
-// =========================
-// AUTO LOAD
-// =========================
-
-window.onload = function() {
-    const vlanSelect = document.getElementById('vlan-select');
-    if (vlanSelect.value !== "") {
-        // "Clica" no botão por nós
-        document.getElementById('btn-gerar').click();
+    const btnImportGNS3 = document.getElementById('btnImportGNS3');
+    const fileGNS3 = document.getElementById('fileGNS3');
+    
+    if(btnImportGNS3 && fileGNS3) {
+        btnImportGNS3.addEventListener('click', () => { fileGNS3.click(); });
+        
+        fileGNS3.addEventListener('change', function(e) {
+            const file = e.target.files[0]; if (!file) return;
+            const formData = new FormData(); formData.append('file', file);
+            
+            btnImportGNS3.innerHTML = '<i class="mdi mdi-loading mdi-spin"></i>';
+            
+            fetch('/api/plugins/topology-vlan/import-gns3/', { 
+                method: 'POST', 
+                headers: { 'X-CSRFToken': getCookie('csrftoken') }, 
+                body: formData 
+            })
+            .then(response => response.json())
+            .then(data => {
+                btnImportGNS3.innerHTML = '<i class="mdi mdi-upload"></i> Importar GNS3';
+                if (data.Erro) {
+                    alert('Erro: ' + data.Erro); 
+                } else { 
+                    alert(`Sucesso! Foram criados ${data.criados} equipamentos.`); 
+                    location.reload(); 
+                }
+            }).catch(err => {
+                btnImportGNS3.innerHTML = '<i class="mdi mdi-upload"></i> Importar GNS3'; 
+                alert('Erro na importação.');
+            });
+            e.target.value = ''; 
+        });
     }
-};
+
+}); 
+

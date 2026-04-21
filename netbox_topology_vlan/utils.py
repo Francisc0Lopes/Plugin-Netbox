@@ -28,8 +28,8 @@ def get_vlan(vlan_ids, site_id=None):
             nos.append({
                 "id": Equip.id,
                 "name": Equip.name, 
-                "role": role_obj.name if role_obj else "" ,
-                "url" : Equip.get_absolute_url()
+                "url": Equip.get_absolute_url(),
+                "role": role_obj.name if role_obj else "" 
             })
         
         if interface.cable and interface.cable.id not in cabos_processados:

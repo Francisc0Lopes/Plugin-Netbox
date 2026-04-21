@@ -1,20 +1,24 @@
+<style>
+    {% include 'netbox_topology_vlan/css/style-popup.css' %}
+</style>
 <template id="edge-popup-template">
     <div>
         <strong class="popup-header">
             <i class="mdi mdi-information-outline"></i> Detalhes da Ligação
         </strong>
         <div class="popup-body">
-            Porta A: <span class="porta-a"></span> (<span class="modo-a"></span>)<br>
-            Porta B: <span class="porta-b"></span> (<span class="modo-b"></span>)<br>
+            Porta <span class="porta-a"></span> (<span class="modo-a"></span>)<br>
+            Porta <span class="porta-b"></span> (<span class="modo-b"></span>)<br>
 
+
+            <div class="trunk-vlans-box" style="display: none; margin-top: 5px;">
+                <span style="color: #f97316; font-weight: bold;">VLANs no Trunk:</span> 
+                <span class="trunk-vlans text-light"></span>
+            </div>   
+            
+            
             <div>
-                <span class="badge-estado">
-                    Estado: <span class="estado-stp"></span>
-                </span>
-            </div>
-
-            <div class="trunk-vlans-box" style="display: none;">
-                VLANs: <span class="trunk-vlans"></span>
+                <span class="badge-estado">Estado: <span class="estado-stp"></span></span>
             </div>
         </div>
     </div>
