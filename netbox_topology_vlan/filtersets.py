@@ -1,0 +1,1 @@
+#Usado para criar filtros personalizados ex: filtrar por VLAN filtrar por device filtrar por role

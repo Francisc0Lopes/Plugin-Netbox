@@ -53,17 +53,23 @@
     <div class="col-md-4">
         <div class="card mb-0 bg-dark text-light shadow-sm" style="height: 100%;"> 
             <div class="card-body p-2 d-flex justify-content-around align-items-center">
-                <div class="text-center">
-                    <div class="text-muted fw-bold" style="font-size: 10px;">NÓS</div>
-                    <div class="fw-bolder fs-4" id="stat-nos">0</div>
+               <div class="text-center d-flex flex-column align-items-center">
+                    <div class="text-uppercase text-info opacity-75 mb-2" style="font-size: 9px; letter-spacing: 1.5px; font-weight: 800;">Nós</div>
+                    <div class="fw-bolder text-white" id="stat-nos" style="font-size: 2.2rem; line-height: 1.1; text-shadow: 0 0 20px rgba(56,189,248,0.3);">-</div>
                 </div>
-                <div class="text-center">
-                    <div class="text-muted fw-bold" style="font-size: 10px;">LIGAÇÕES</div>
-                    <div class="fw-bolder fs-4" id="stat-ligacoes">0</div>
+
+                <div style="width: 1px; height: 35px; background: linear-gradient(to bottom, transparent, rgba(255,255,255,0.15), transparent);"></div>
+
+                <div class="text-center d-flex flex-column align-items-center">
+                    <div class="text-uppercase text-info opacity-75 mb-2" style="font-size: 9px; letter-spacing: 1.5px; font-weight: 800;">Ligações</div>
+                    <div class="fw-bolder text-white" id="stat-ligacoes" style="font-size: 2.2rem; line-height: 1.1; text-shadow: 0 0 20px rgba(56,189,248,0.3);">-</div>
                 </div>
-                <div class="text-center">
-                    <div class="text-muted fw-bold" style="font-size: 10px;">VLAN ATIVA</div>
-                    <div class="fw-bolder fs-4 text-info" id="stat-vlan">-</div>
+
+                <div style="width: 1px; height: 35px; background: linear-gradient(to bottom, transparent, rgba(255,255,255,0.15), transparent);"></div>
+
+                <div class="text-center d-flex flex-column align-items-center">
+                    <div class="text-uppercase text-info opacity-75 mb-2" style="font-size: 9px; letter-spacing: 1.5px; font-weight: 800;">VLAN Ativa</div>
+                    <div class="fw-bolder" id="stat-vlan" style="font-size: 2.2rem; line-height: 1.1; color: #38bdf8; text-shadow: 0 0 20px rgba(56,189,248,0.5);">-</div>
                 </div>
             </div>
         </div>

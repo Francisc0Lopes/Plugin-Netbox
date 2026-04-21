@@ -28,6 +28,7 @@ def get_vlan(vlan_ids, site_id=None):
             nos.append({
                 "id": Equip.id,
                 "name": Equip.name, 
+                "url": Equip.get_absolute_url(),
                 "role": role_obj.name if role_obj else "" 
             })
         
