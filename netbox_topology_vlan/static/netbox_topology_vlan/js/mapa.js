@@ -1,5 +1,5 @@
 let globalDados = null; 
-
+let networkMapa = null;
 // A vacina: O código só corre quando a página estiver 100% carregada no browser
 document.addEventListener('DOMContentLoaded', function() {
     
@@ -120,8 +120,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // ==========================================
     // 3. DESENHO DO MAPA E ÍCONES (Vis.js)
     // ==========================================
-    const svgRouter = `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" fill="#0d6efd" stroke="#ffffff" stroke-width="3"/><path d="M50 20v60m30-30H20" stroke="white" stroke-width="8" stroke-linecap="round"/><path d="M40 30l10-10 10 10M40 70l10 10 10-10M30 40l-10 10 10 10M70 40l10 10-10 10" fill="none" stroke="white" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  const svgRouter = `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" fill="#0d6efd" stroke="#ffffff" stroke-width="3"/><path d="M50 20v60m30-30H20" stroke="white" stroke-width="8" stroke-linecap="round"/><path d="M40 30l10-10 10 10M40 70l10 10 10-10M30 40l-10 10 10 10M70 40l10 10-10 10" fill="none" stroke="white" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
     const svgSwitch = `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="90" height="60" x="5" y="20" rx="8" fill="#0d6efd" stroke="#ffffff" stroke-width="3"/><path d="M15 45h70M50 45v35" stroke="#ffffff" stroke-width="5"/><circle cx="20" cy="35" r="4" fill="#ffffff"/><circle cx="35" cy="35" r="4" fill="#ffffff"/><circle cx="50" cy="35" r="4" fill="#ffffff"/><circle cx="65" cy="35" r="4" fill="#ffffff"/><circle cx="20" cy="65" r="4" fill="#ffffff"/><circle cx="50" cy="65" r="4" fill="#ffffff"/><circle cx="80" cy="65" r="4" fill="#ffffff"/></svg>`;
+    const svgPC = `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect x="15" y="20" width="70" height="45" rx="4" fill="#0d6efd" stroke="#ffffff" stroke-width="3"/><path d="M40 65 L35 85 L65 85 L60 65 Z" fill="#0d6efd" stroke="#ffffff" stroke-width="2"/><line x1="25" y1="85" x2="75" y2="85" stroke="#ffffff" stroke-width="4" stroke-linecap="round"/></svg>`;
 
     function svgToDataUri(svg) { return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg); }
 
@@ -129,8 +130,13 @@ document.addEventListener('DOMContentLoaded', function() {
         role = (role || "").toLowerCase();
         if (role.includes('router')) return svgRouter;
         if (role.includes('switch')) return svgSwitch;
+        if (role.includes('pc') || role.includes('host') || role.includes('desktop')) return svgPC; 
+        
         return `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect x="10" y="20" width="80" height="60" rx="5" fill="#6c757d" stroke="#ffffff" stroke-width="2"/><text x="50" y="60" text-anchor="middle" fill="white" font-size="40">?</text></svg>`;
     }
+
+    let networkMapa = null;
+
 
     // Constrói o balão de informação quando se passa o rato na ligação
     function criarPopup(ligacao) {
@@ -157,8 +163,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function desenharMapa(dados) {
-        globalDados = dados; 
-        
         const nodes = new vis.DataSet(dados.nos.map(no => ({
             id: no.id, label: no.name, shape: 'image', image: svgToDataUri(getDeviceIcon(no.role)),
             font: { color: '#adb5bd', size: 14, face: 'monospace', vadjust: 55, bold: true },
@@ -167,7 +171,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const edges = new vis.DataSet(dados.ligacoes.map(ligacao => {
             const isTrunk = ligacao.source_mode === 'Trunk' || ligacao.target_mode === 'Trunk';
-            const corLigacao = isTrunk ? '#f97316' : '#64748b'; // Laranja para Trunk, Cinza para Access
+            const corLigacao = isTrunk ? '#f97316' : '#64748b'; 
             
             return {
                 from: ligacao.source, to: ligacao.target,
@@ -181,12 +185,15 @@ document.addEventListener('DOMContentLoaded', function() {
             };
         }));
         
-        new vis.Network(document.getElementById('mapa-rede'), { nodes, edges }, {
+        if (networkMapa !== null) {
+            networkMapa.destroy();
+        }
+        
+        networkMapa = new vis.Network(document.getElementById('mapa-rede'), { nodes, edges }, {
             physics: { forceAtlas2Based: { gravitationalConstant: -120, springLength: 220 } },
             interaction: { hover: true, tooltipDelay: 100 }
         });
     }
-
     // ==========================================
     // 4. BOTÕES DE EXPORTAÇÃO E IMPORTAÇÃO
     // ==========================================
