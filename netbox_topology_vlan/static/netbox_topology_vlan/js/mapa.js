@@ -1,4 +1,5 @@
 let globalDados = null; 
+let networkMapa = null;
 
 // A vacina: O código só corre quando a página estiver 100% carregada no browser
 document.addEventListener('DOMContentLoaded', function() {
@@ -110,8 +111,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 } else {
                     statVlan.innerText = data.vlan; 
                 }
-
-
                 // Envia para o Vis.js desenhar
                 desenharMapa(data);
             });
@@ -272,6 +271,7 @@ function desenharMapa(dados) {
     );
 
     const container = document.getElementById('mapa-rede');
+    if (!container) return;
     const data = { nodes, edges };
 
     const options = {
@@ -291,10 +291,15 @@ function desenharMapa(dados) {
         }
     };
 
-    const network = new vis.Network(container, data, options);
+    if (networkMapa !== null) {
+        networkMapa.destroy();
+        networkMapa = null;
+    }
+
+    networkMapa = new vis.Network(container, data, options);
 
     // Evento de duplo clique para navegação
-    network.on("doubleClick", function (params) {
+    networkMapa.on("doubleClick", function (params) {
         if (params.nodes.length > 0) {
             const node = nodes.get(params.nodes[0]);
             if (node.url) {
@@ -355,7 +360,7 @@ function desenharMapa(dados) {
         });
     }
 
-// ==========================================
+    // ==========================================
     // EXPORTAR PARA GNS3 (.gns3)
     // ==========================================
     const btnDownloadGNS3 = document.getElementById('btnDownloadGNS3');
