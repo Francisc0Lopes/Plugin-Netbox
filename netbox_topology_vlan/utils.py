@@ -89,7 +89,8 @@ def get_vlan(vlan_ids, site_id=None):
                         "target_port": remote_interface.name,
                         "target_mode": "Trunk" if is_remote_trunk else "Access", 
                         "stp_state": "Forwarding",
-                        "vlans_trunk": vlans_str  
+                        "vlans_trunk": vlans_str, 
+                        "vlan_access": str(source_access_vid) if source_access_vid else "N/A"
                     })
 
                     # Adiciona a máquina de origem (só se ainda não estiver na lista)

@@ -211,10 +211,14 @@ const svgComputer =  `
         div.querySelector('.estado-stp').textContent = ligacao.stp_state || 'Forwarding';
         
         // Se a porta for Trunk, acende a informação das VLANs no popup
-        const isTrunk = ligacao.source_mode === 'Trunk' || ligacao.target_mode === 'Trunk';
-        if (isTrunk) {
+        if (ligacao.source_mode === 'Trunk' || ligacao.target_mode === 'Trunk') {
             div.querySelector('.trunk-vlans-box').style.display = 'block';
             div.querySelector('.trunk-vlans').textContent = ligacao.vlans_trunk || 'Todas'; 
+        }
+        // Se a porta for Access, acede a informação das VLANs no popup 
+        else if (ligacao.source_mode === 'Access' || ligacao.target_mode === 'Access') {
+            div.querySelector('.vlan-info-box').style.display = 'block';
+            div.querySelector('.vlan-data').textContent = ligacao.vlan_access || 'Todas';
         }
         return div;
     }
