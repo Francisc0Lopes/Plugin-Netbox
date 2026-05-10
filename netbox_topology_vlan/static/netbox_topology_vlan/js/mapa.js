@@ -228,7 +228,7 @@ function desenharMapa(dados) {
 
     const nodes = new vis.DataSet(
         dados.nos.map(no => ({
-            id: String(no.id),
+            id: no.id,
             label: no.name,
             url: no.url,
             shape: 'image',
