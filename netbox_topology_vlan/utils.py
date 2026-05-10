@@ -99,7 +99,7 @@ def get_vlan(vlan_ids, site_id=None):
                         nos.append({
                             "id": Equip.id,
                             "name": Equip.name, 
-                            "url": remote_interface.device.get_absolute_url(),
+                            "url": Equip.get_absolute_url(),
                             "role": s_role.name if s_role else "" 
                         })
 

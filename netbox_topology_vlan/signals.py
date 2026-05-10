@@ -4,24 +4,26 @@ from django.core.cache import cache
 from dcim.models import Interface, Device
 from ipam.models import VLAN
 
-#NÃO FUNCIONA, NÃO SEI PORQUÊ, A IDEIA ERA LIMPAR O CACHE QUANDO HOUVER ALTERAÇÕES NAS INTERFACES,
-# VLANs OU DISPOSITIVOS PARA GARANTIR QUE O MAPA SEJA ATUALIZADO 
 def invalidate_vlan_topology_cache():
-    """Função helper para limpar o cache da topologia VLAN."""
-    cache.clear() 
+    """Apaga a chave de cache específica da topologia."""
+    # Use delete() para uma chave ou clear() para TUDO (cuidado com clear)
+    print("✅ A limpar cache da topologia...")
+    cache.delete('vlan_topology_data') 
 
-# Quando uma interface ou VLAN muda
+# Lista de modelos que afetam o desenho da topologia
+# Se editares um Device (nome), uma Interface (ligação) ou VLAN, o mapa limpa.
 @receiver(post_save, sender=Interface)
 @receiver(post_save, sender=VLAN)
-def on_save_interface_or_vlan(sender, instance, **kwargs):
+@receiver(post_save, sender=Device)
+def on_save_changes(sender, instance, **kwargs):
+    # O 'created' indica se é um novo objeto ou uma edição
+    status = "criado" if kwargs.get('created') else "editado"
+    print(f"✅ SIGNAL: {sender.__name__} {status} (ID: {instance.id}).")
     invalidate_vlan_topology_cache()
 
-# Quando uma interface é apagada
 @receiver(post_delete, sender=Interface)
-def on_delete_interface(sender, instance, **kwargs):
-    invalidate_vlan_topology_cache()
-
-# Quando um dispositivo é apagado
+@receiver(post_delete, sender=VLAN)
 @receiver(post_delete, sender=Device)
-def on_delete_device(sender, instance, **kwargs):
+def on_delete_changes(sender, instance, **kwargs):
+    print(f"❌ SIGNAL: {sender.__name__} eliminado (ID: {instance.id}).")
     invalidate_vlan_topology_cache()

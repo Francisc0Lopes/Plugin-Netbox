@@ -8,5 +8,10 @@ class TopologyVlanConfig(PluginConfig):
     base_url = 'topology-vlan'
     author = 'Francisco Lopes e João Constantino'
 
+    def ready(self):
+        super().ready()
+        # Isto importa o ficheiro signals.py quando o NetBox arranca
+        import netbox_topology_vlan.signals
+        
 config = TopologyVlanConfig
 
