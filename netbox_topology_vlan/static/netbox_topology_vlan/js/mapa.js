@@ -234,7 +234,9 @@ function desenharMapa(dados) {
             shape: 'image',
             image: svgToDataUri(getDeviceIcon(no.role)),
             font: { 
-                color: '#ffffff',
+                color: '#000000',  
+                strokeWidth: 1,      
+                strokeColor: '#ffffff', 
                 size: 14,
                 face: 'monospace',
             },
@@ -259,14 +261,15 @@ function desenharMapa(dados) {
                 color: { 
                     color: corLigacao,
                     highlight: '#00d4ff',
-                    hover: '#ffffff'
+                    hover: '#00d4ff'
                 },
                 width: 3,
                 font: { 
                     align: 'top',
                     size: 6,
-                    color: '#ffffff',
-                    strokeColor: '#1e1e24',
+                    color: '#000000',
+                    strokeWidth: 2,   
+                    strokeColor: '#ffffff',
                     face: 'monospace',
                 },
                 shadow: true

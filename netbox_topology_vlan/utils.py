@@ -75,7 +75,7 @@ def get_vlan(vlan_ids, site_id=None):
                         vlans_str = "Nenhuma"
                     elif len(vlans_permitidas) == len(vids_selecionadas) and len(vids_selecionadas) > 1:
                         vlans_str = "Todas"
-                    elif len(vlans_permitidas) > 3:
+                    elif len(vlans_permitidas) > 4:
                         vlans_str = f"{len(vlans_permitidas)} VLANs"
                     else:
                         vlans_str = ", ".join(vlans_permitidas) if vlans_permitidas else "N/A"
