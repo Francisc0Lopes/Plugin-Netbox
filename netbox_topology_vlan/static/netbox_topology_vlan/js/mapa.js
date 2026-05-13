@@ -234,9 +234,9 @@ function desenharMapa(dados) {
             shape: 'image',
             image: svgToDataUri(getDeviceIcon(no.role)),
             font: { 
-                color: '#000000',  
-                strokeWidth: 4,      
-                strokeColor: '#ffffff', 
+                color: '#ffffff',  
+                strokeWidth: 2,      
+                strokeColor: '#000000', 
                 size: 16,
                 face: 'monospace',
             },
