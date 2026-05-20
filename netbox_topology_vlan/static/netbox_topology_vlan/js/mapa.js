@@ -8,6 +8,27 @@ document.addEventListener('DOMContentLoaded', function() {
     const btnGerar = document.getElementById('btn-gerar');
     const vlanList = document.getElementById('vlan-checkbox-list');
     const helpText = document.getElementById('vlan-help-text');
+    
+    // Botões e painel de filtros
+    const btnToggleFiltros = document.getElementById('btnToggleFiltros');
+    const btnFecharFiltros = document.getElementById('btnFecharFiltros');
+    const painelFiltros = document.getElementById('painelFiltros');
+
+    // Ao clicar no botão "Filtros e Destaques" -> Alterna entre mostrar/esconder
+    if (btnToggleFiltros && painelFiltros) {
+        btnToggleFiltros.addEventListener('click', function(e) {
+            e.preventDefault(); // Evita qualquer comportamento estranho de submissão
+            painelFiltros.classList.toggle('d-none');
+        });
+    }
+
+    // Ao clicar no "X" dentro do painel -> Oculta o painel adicionando 'd-none'
+    if (btnFecharFiltros && painelFiltros) {
+        btnFecharFiltros.addEventListener('click', function(e) {
+            e.preventDefault();
+            painelFiltros.classList.add('d-none');
+        });
+    }
 
     if (!siteSelect || !btnGerar) return; // Segurança extra
 
@@ -201,15 +222,30 @@ const svgComputer =  `
         if(!template) return document.createElement('div');
         
         const clone = template.content.cloneNode(true);
+
+        const modoA = ligacao.source_mode ? ligacao.source_mode.toLowerCase() : '';
+        const modoB = ligacao.target_mode ? ligacao.target_mode.toLowerCase() : '';
+
         const div = document.createElement('div');
         div.appendChild(clone);
 
+        // Mantém a tua estrutura original de preenchimento através da div:
         div.querySelector('.porta-a').textContent = ligacao.source_port;
         div.querySelector('.modo-a').textContent = ligacao.source_mode;
         div.querySelector('.porta-b').textContent = ligacao.target_port;
         div.querySelector('.modo-b').textContent = ligacao.target_mode;
         div.querySelector('.estado-stp').textContent = ligacao.stp_state || 'Forwarding';
         
+        // A nossa validação de Erro Trunk vs Access (corrigida para a tua estrutura)
+        const errorBox = div.querySelector('.error-mismatch-box');
+        if (errorBox) {
+            if ((modoA === 'trunk' && modoB === 'access') || (modoA === 'access' && modoB === 'trunk')) {
+                errorBox.style.display = 'block'; // Mostra o aviso vermelho corrigido!
+            } else {
+                errorBox.style.display = 'none';  // Esconde se estiver tudo bem
+            }
+        }
+
         // Se a porta for Trunk, acende a informação das VLANs no popup
         if (ligacao.source_mode === 'Trunk' || ligacao.target_mode === 'Trunk') {
             div.querySelector('.trunk-vlans-box').style.display = 'block';
@@ -220,6 +256,7 @@ const svgComputer =  `
             div.querySelector('.vlan-info-box').style.display = 'block';
             div.querySelector('.vlan-data').textContent = ligacao.vlan_access || 'Todas';
         }
+
         return div;
     }
 
