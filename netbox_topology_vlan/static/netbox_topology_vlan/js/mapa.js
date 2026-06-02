@@ -1,7 +1,7 @@
 let globalDados = null; 
 let networkMapa = null;
 
-// A vacina: O código só corre quando a página estiver 100% carregada no browser
+// O código só corre quando a página estiver 100% carregada no browser
 document.addEventListener('DOMContentLoaded', function() {
     
     const siteSelect = document.getElementById('site-select');
@@ -14,21 +14,15 @@ document.addEventListener('DOMContentLoaded', function() {
     const btnFecharFiltros = document.getElementById('btnFecharFiltros');
     const painelFiltros = document.getElementById('painelFiltros');
 
-    // Ao clicar no botão "Filtros e Destaques" -> Alterna entre mostrar/esconder
-    if (btnToggleFiltros && painelFiltros) {
-        btnToggleFiltros.addEventListener('click', function(e) {
-            e.preventDefault(); // Evita qualquer comportamento estranho de submissão
-            painelFiltros.classList.toggle('d-none');
-        });
-    }
-
-    // Ao clicar no "X" dentro do painel -> Oculta o painel adicionando 'd-none'
-    if (btnFecharFiltros && painelFiltros) {
-        btnFecharFiltros.addEventListener('click', function(e) {
+    if (painelFiltros && (btnToggleFiltros || btnFecharFiltros)) {
+    [btnToggleFiltros, btnFecharFiltros].forEach(btn => {
+        btn?.addEventListener('click', (e) => {
             e.preventDefault();
-            painelFiltros.classList.add('d-none');
+            // Se for o botão de fechar (X), força 'd-none'. Se for o de toggle, alterna.
+            btn === btnFecharFiltros ? painelFiltros.classList.add('d-none') : painelFiltros.classList.toggle('d-none');
         });
-    }
+    });
+}
 
     if (!siteSelect || !btnGerar) return; // Segurança extra
 
@@ -263,8 +257,74 @@ const svgComputer =  `
 function desenharMapa(dados) {
     globalDados = dados;
 
+    const container = document.getElementById('mapa-rede');
+    const aviso = document.getElementById('aviso-intersecao');
+    const btnFecharAviso = document.getElementById('btn-fechar-aviso');
+
+    if (!container) return;
+
+    const listaNos = dados.nos || [];
+    const listaLigacoes = dados.ligacoes || [];
+    
+    let asVlansSeCruzam = true;
+
+    if (listaNos.length === 0) {
+        asVlansSeCruzam = false;
+    } else if (listaLigacoes.length === 0) {
+        // Se houver mais do que 1 nó e 0 ligações, não se cruzam
+        asVlansSeCruzam = listaNos.length <= 1; 
+    } else {
+        // Construir uma lista de adjacências (mapear quem está ligado a quem)
+        const adj = {};
+        listaNos.forEach(no => adj[no.id] = []);
+        
+        listaLigacoes.forEach(lig => {
+            // Garante que os nós existem no mapa antes de associar a ligação
+            if (adj[lig.source] && adj[lig.target]) {
+                adj[lig.source].push(lig.target);
+                adj[lig.target].push(lig.source);
+            }
+        });
+
+        // Algoritmo BFS (Busca em Largura) para ver se conseguimos tocar em todos os nós
+        const visitados = new Set();
+        const fila = [listaNos[0].id]; // Começa no primeiro nó da lista
+        visitados.add(listaNos[0].id);
+
+        while (fila.length > 0) {
+            const atual = fila.shift();
+            (adj[atual] || []).forEach(vizinho => {
+                if (!visitados.has(vizinho)) {
+                    visitados.add(vizinho);
+                    fila.push(vizinho);
+                }
+            });
+        }
+
+        // significa que existem ilhas isoladas e as VLANs NÃO se cruzam!
+        if (visitados.size < listaNos.length) {
+            asVlansSeCruzam = false;
+        }
+    }
+
+    if (!asVlansSeCruzam) {
+        if (aviso) {
+            aviso.classList.remove('d-none'); // Mostra o aviso (existem ilhas separadas!)
+        }
+    } else {
+        if (aviso) {
+            aviso.classList.add('d-none');    // Esconde o aviso (o grafo está totalmente unido)
+        }
+    }
+
+    if (btnFecharAviso && aviso) {
+        btnFecharAviso.addEventListener('click', function() {
+            aviso.classList.add('d-none');
+        });
+    }
+
     const nodes = new vis.DataSet(
-        dados.nos.map(no => ({
+        listaNos.map(no => ({
             id: no.id,
             label: no.name,
             url: no.url,
@@ -277,17 +337,14 @@ function desenharMapa(dados) {
                 size: 16,
                 face: 'monospace',
             },
-            shadow: { 
-                enabled: true, 
-                color: 'rgba(0,0,0,0.4)', 
-                size: 8
-            }
+            shadow: { enabled: true, color: 'rgba(0,0,0,0.4)', size: 8 }
         }))
     );
 
-    const edges = new vis.DataSet(dados.ligacoes.map(ligacao => {
-    const isTrunk = ligacao.source_mode === 'Trunk' || ligacao.target_mode === 'Trunk';
-    const corLigacao = isTrunk ? '#f97316' : '#64748b'; // Laranja para Trunk, Cinza para Access
+    const edges = new vis.DataSet(
+        listaLigacoes.map(ligacao => {
+            const isTrunk = ligacao.source_mode === 'Trunk' || ligacao.target_mode === 'Trunk';
+            const corLigacao = isTrunk ? '#f97316' : '#64748b';
 
             return {
                 from: ligacao.source,
@@ -295,11 +352,7 @@ function desenharMapa(dados) {
                 label: `${ligacao.source_port} ↔ ${ligacao.target_port}`,
                 title: criarPopup(ligacao),
                 dashes: isTrunk,
-                color: { 
-                    color: corLigacao,
-                    highlight: '#00d4ff',
-                    hover: '#00d4ff'
-                },
+                color: { color: corLigacao, highlight: '#00d4ff', hover: '#00d4ff' },
                 width: 3,
                 font: { 
                     align: 'top',
@@ -314,9 +367,7 @@ function desenharMapa(dados) {
         })
     );
 
-    const container = document.getElementById('mapa-rede');
-    if (!container) return;
-    const data = { nodes, edges };
+    const data = { nodes, edges }; 
 
     const options = {
         physics: {
@@ -342,7 +393,6 @@ function desenharMapa(dados) {
 
     networkMapa = new vis.Network(container, data, options);
 
-    // Evento de duplo clique para navegação
     networkMapa.on("doubleClick", function (params) {
         if (params.nodes.length > 0) {
             const node = nodes.get(params.nodes[0]);
