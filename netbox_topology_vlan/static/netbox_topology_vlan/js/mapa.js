@@ -15,14 +15,14 @@ document.addEventListener('DOMContentLoaded', function() {
     const painelFiltros = document.getElementById('painelFiltros');
 
     if (painelFiltros && (btnToggleFiltros || btnFecharFiltros)) {
-    [btnToggleFiltros, btnFecharFiltros].forEach(btn => {
-        btn?.addEventListener('click', (e) => {
-            e.preventDefault();
-            // Se for o botão de fechar (X), força 'd-none'. Se for o de toggle, alterna.
-            btn === btnFecharFiltros ? painelFiltros.classList.add('d-none') : painelFiltros.classList.toggle('d-none');
+        [btnToggleFiltros, btnFecharFiltros].forEach(btn => {
+            btn?.addEventListener('click', (e) => {
+                e.preventDefault();
+                // Se for o botão de fechar (X), força 'd-none'. Se for o de toggle, alterna.
+                btn === btnFecharFiltros ? painelFiltros.classList.add('d-none') : painelFiltros.classList.toggle('d-none');
+            });
         });
-    });
-}
+    }
 
     if (!siteSelect || !btnGerar) return; // Segurança extra
 
@@ -254,154 +254,280 @@ const svgComputer =  `
         return div;
     }
 
-function desenharMapa(dados) {
-    globalDados = dados;
+    function desenharMapa(dados) {
+        globalDados = dados;
 
-    const container = document.getElementById('mapa-rede');
-    const aviso = document.getElementById('aviso-intersecao');
-    const btnFecharAviso = document.getElementById('btn-fechar-aviso');
+        const container = document.getElementById('mapa-rede');
+        const aviso = document.getElementById('aviso-intersecao');
+        const btnFecharAviso = document.getElementById('btn-fechar-aviso');
 
-    if (!container) return;
+        if (!container) return;
 
-    const listaNos = dados.nos || [];
-    const listaLigacoes = dados.ligacoes || [];
-    
-    let asVlansSeCruzam = true;
-
-    if (listaNos.length === 0) {
-        asVlansSeCruzam = false;
-    } else if (listaLigacoes.length === 0) {
-        // Se houver mais do que 1 nó e 0 ligações, não se cruzam
-        asVlansSeCruzam = listaNos.length <= 1; 
-    } else {
-        // Construir uma lista de adjacências (mapear quem está ligado a quem)
-        const adj = {};
-        listaNos.forEach(no => adj[no.id] = []);
+        const listaNos = dados.nos || [];
+        const listaLigacoes = dados.ligacoes || [];
         
-        listaLigacoes.forEach(lig => {
-            // Garante que os nós existem no mapa antes de associar a ligação
-            if (adj[lig.source] && adj[lig.target]) {
-                adj[lig.source].push(lig.target);
-                adj[lig.target].push(lig.source);
-            }
-        });
+        let asVlansSeCruzam = true;
 
-        // Algoritmo BFS (Busca em Largura) para ver se conseguimos tocar em todos os nós
-        const visitados = new Set();
-        const fila = [listaNos[0].id]; // Começa no primeiro nó da lista
-        visitados.add(listaNos[0].id);
-
-        while (fila.length > 0) {
-            const atual = fila.shift();
-            (adj[atual] || []).forEach(vizinho => {
-                if (!visitados.has(vizinho)) {
-                    visitados.add(vizinho);
-                    fila.push(vizinho);
+        if (listaNos.length === 0) {
+            asVlansSeCruzam = false;
+        } else if (listaLigacoes.length === 0) {
+            // Se houver mais do que 1 nó e 0 ligações, não se cruzam
+            asVlansSeCruzam = listaNos.length <= 1; 
+        } else {
+            // Construir uma lista de adjacências (mapear quem está ligado a quem)
+            const adj = {};
+            listaNos.forEach(no => adj[no.id] = []);
+            
+            listaLigacoes.forEach(lig => {
+                // Garante que os nós existem no mapa antes de associar a ligação
+                if (adj[lig.source] && adj[lig.target]) {
+                    adj[lig.source].push(lig.target);
+                    adj[lig.target].push(lig.source);
                 }
+            });
+
+            // Algoritmo BFS (Busca em Largura) para ver se conseguimos tocar em todos os nós
+            const visitados = new Set();
+            const fila = [listaNos[0].id]; // Começa no primeiro nó da lista
+            visitados.add(listaNos[0].id);
+
+            while (fila.length > 0) {
+                const atual = fila.shift();
+                (adj[atual] || []).forEach(vizinho => {
+                    if (!visitados.has(vizinho)) {
+                        visitados.add(vizinho);
+                        fila.push(vizinho);
+                    }
+                });
+            }
+
+            // significa que existem ilhas isoladas e as VLANs NÃO se cruzam!
+            if (visitados.size < listaNos.length) {
+                asVlansSeCruzam = false;
+            }
+        }
+
+        if (!asVlansSeCruzam) {
+            if (aviso) {
+                aviso.classList.remove('d-none'); // Mostra o aviso (existem ilhas separadas!)
+            }
+        } else {
+            if (aviso) {
+                aviso.classList.add('d-none');    // Esconde o aviso (o grafo está totalmente unido)
+            }
+        }
+
+        if (btnFecharAviso && aviso) {
+            btnFecharAviso.addEventListener('click', function() {
+                aviso.classList.add('d-none');
             });
         }
 
-        // significa que existem ilhas isoladas e as VLANs NÃO se cruzam!
-        if (visitados.size < listaNos.length) {
-            asVlansSeCruzam = false;
-        }
-    }
+        const nodes = new vis.DataSet(
+            listaNos.map(no => ({
+                id: no.id,
+                label: no.name,
+                url: no.url,
+                shape: 'image',
+                image: svgToDataUri(getDeviceIcon(no.role)),
+                font: { 
+                    color: '#ffffff',  
+                    strokeWidth: 2,      
+                    strokeColor: '#000000', 
+                    size: 16,
+                    face: 'monospace',
+                },
+                shadow: { enabled: true, color: 'rgba(0,0,0,0.4)', size: 8 }
+            }))
+        );
 
-    if (!asVlansSeCruzam) {
-        if (aviso) {
-            aviso.classList.remove('d-none'); // Mostra o aviso (existem ilhas separadas!)
-        }
-    } else {
-        if (aviso) {
-            aviso.classList.add('d-none');    // Esconde o aviso (o grafo está totalmente unido)
-        }
-    }
+        const edges = new vis.DataSet(
+            listaLigacoes.map(ligacao => {
+                const isTrunk = ligacao.source_mode === 'Trunk' || ligacao.target_mode === 'Trunk';
+                const corLigacao = isTrunk ? '#f97316' : '#64748b';
 
-    if (btnFecharAviso && aviso) {
-        btnFecharAviso.addEventListener('click', function() {
-            aviso.classList.add('d-none');
+                return {
+                    from: ligacao.source,
+                    to: ligacao.target,
+                    label: `${ligacao.source_port} ↔ ${ligacao.target_port}`,
+                    title: criarPopup(ligacao),
+                    dashes: isTrunk,
+                    color: { color: corLigacao, highlight: '#00d4ff', hover: '#00d4ff' },
+                    width: 3,
+                    font: { 
+                        align: 'top',
+                        size: 6,
+                        color: '#000000',
+                        strokeWidth: 2,   
+                        strokeColor: '#ffffff',
+                        face: 'monospace',
+                    },
+                    shadow: true
+                };
+            })
+        );
+
+        const data = { nodes, edges }; 
+
+        const options = {
+            physics: {
+                enabled: true,
+                forceAtlas2Based: {
+                    gravitationalConstant: -10000,
+                    springLength: 350,
+                    springConstant: 1
+                },
+                stabilization: { iterations: 200 }
+            },
+            interaction: {
+                hover: true,
+                navigationButtons: true,
+                keyboard: true
+            }
+        };
+
+        if (networkMapa !== null) {
+            networkMapa.destroy();
+            networkMapa = null;
+        }
+
+        networkMapa = new vis.Network(container, data, options);
+        
+        networkMapa.once('stabilizationIterationsDone', function() {
+            atualizarPainelFiltros(dados);
+        })
+
+        networkMapa.on("doubleClick", function (params) {
+            if (params.nodes.length > 0) {
+                const node = nodes.get(params.nodes[0]);
+                if (node.url) {
+                    window.location.href = node.url;
+                }
+            }
         });
     }
 
-    const nodes = new vis.DataSet(
-        listaNos.map(no => ({
-            id: no.id,
-            label: no.name,
-            url: no.url,
-            shape: 'image',
-            image: svgToDataUri(getDeviceIcon(no.role)),
-            font: { 
-                color: '#ffffff',  
-                strokeWidth: 2,      
-                strokeColor: '#000000', 
-                size: 16,
-                face: 'monospace',
-            },
-            shadow: { enabled: true, color: 'rgba(0,0,0,0.4)', size: 8 }
-        }))
-    );
+    // ==========================================
+    // 4. LÓGICA DE FILTROS DINÂMICOS
+    // ==========================================
 
-    const edges = new vis.DataSet(
-        listaLigacoes.map(ligacao => {
-            const isTrunk = ligacao.source_mode === 'Trunk' || ligacao.target_mode === 'Trunk';
-            const corLigacao = isTrunk ? '#f97316' : '#64748b';
+    function atualizarPainelFiltros(dados) {
+        
+        // Filtrar por VLAN (apenas mostra as VLANs que geram a topologia atual)
+        const vlanFilterList = document.getElementById('vlan-color-pickers');
+        
+        if (vlanFilterList && dados.ligacoes && dados.ligacoes.length > 0) {
+            const vlans = dados.vlan.split(',').map(v => v.trim()).filter(v => v);
+            let html = '';
+            vlans.forEach(vlan => {
+                const corPadrao = '#ffffff'; 
+                html += `
+                <div class="form-check py-0 mb-1 d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center">
+                        <input class="form-check-input vlan-filter-checkbox me-2" type="checkbox" 
+                            id="filter-vlan-${vlan}" value="${vlan}" style="margin-top: 0;">
+                        <label class="form-check-label small text-body" for="filter-vlan-${vlan}">
+                            VLAN ${vlan}
+                        </label>
+                    </div>
+                    <input type="color" class="vlan-color-picker border-0 bg-transparent" 
+                        id="color-vlan-${vlan}" data-vlan="${vlan}" value="${corPadrao}" 
+                        style="width: 24px; height: 24px; padding: 0; cursor: pointer; border-radius: 4px;">
+                </div>`;
+            });
+            vlanFilterList.innerHTML = html;
 
-            return {
-                from: ligacao.source,
-                to: ligacao.target,
-                label: `${ligacao.source_port} ↔ ${ligacao.target_port}`,
-                title: criarPopup(ligacao),
-                dashes: isTrunk,
-                color: { color: corLigacao, highlight: '#00d4ff', hover: '#00d4ff' },
-                width: 3,
-                font: { 
-                    align: 'top',
-                    size: 6,
-                    color: '#000000',
-                    strokeWidth: 2,   
-                    strokeColor: '#ffffff',
-                    face: 'monospace',
-                },
-                shadow: true
-            };
-        })
-    );
-
-    const data = { nodes, edges }; 
-
-    const options = {
-        physics: {
-            enabled: true,
-            forceAtlas2Based: {
-                gravitationalConstant: -10000,
-                springLength: 350,
-                springConstant: 1
-            },
-            stabilization: { iterations: 200 }
-        },
-        interaction: {
-            hover: true,
-            navigationButtons: true,
-            keyboard: true
+            // Listener para filtro de VLAN
+            document.querySelectorAll('.vlan-filter-checkbox').forEach(checkbox => {
+                checkbox.addEventListener('change', atualizarMapaComFiltros);
+            });
+        }else if (vlanFilterList) {
+            vlanFilterList.innerHTML = `<div class="text-muted small text-center italic py-2">Nenhuma VLAN ativa.</div>`;
         }
-    };
 
-    if (networkMapa !== null) {
-        networkMapa.destroy();
-        networkMapa = null;
+        // Filtrar por Role (Tipo de Dispositivo)
+        const roleFilterList = document.getElementById('role-filter-list');
+        if (roleFilterList && dados.nos && dados.nos.length > 0) {
+            const roles = [...new Set(dados.nos.map(no => no.role).filter(r => r))];
+            let html = '';
+            roles.forEach(role => {
+                html += `
+                <div class="form-check py-0 mb-1">
+                    <input class="form-check-input role-filter-checkbox" type="checkbox" 
+                        id="filter-role-${role}" value="${role}" checked>
+                    <label class="form-check-label small text-body" for="filter-role-${role}">
+                        ${role || 'Sem Tipo'}
+                    </label>
+                </div>`;
+            });
+            roleFilterList.innerHTML = html;
+
+            // Listener para filtro de Role
+            document.querySelectorAll('.role-filter-checkbox').forEach(checkbox => {
+                checkbox.addEventListener('change', atualizarMapaComFiltros);
+            });
+        }else if (roleFilterList) {
+            roleFilterList.innerHTML = `<div class="text-muted small text-center italic py-2">Nenhum tipo de dispositivo encontrado.</div>`;
+        }
+
+        // Filtrar por status 
+        const stpFilterList = document.getElementById('status-filter-list');
+        if (stpFilterList) {
+            const stpStates = [...new Set(dados.ligacoes.map(l => l.stp_state).filter(s => s))];
+            let html = '';
+            stpStates.forEach(state => {
+                html += `
+                <div class="form-check py-0 mb-1">
+                    <input class="form-check-input stp-filter-checkbox" type="checkbox" 
+                        id="filter-stp-${state}" value="${state}" checked>
+                    <label class="form-check-label small text-body" for="filter-stp-${state}">
+                        ${state}
+                    </label>
+                </div>`;
+            });
+            stpFilterList.innerHTML = html;
+
+            // Listener para filtro de status STP
+            document.querySelectorAll('.stp-filter-checkbox').forEach(checkbox => {
+                checkbox.addEventListener('change', atualizarMapaComFiltros);
+            });
+        }else if (roleFilterList) {
+            roleFilterList.innerHTML = `<div class="text-muted small text-center italic py-2">Nenhum tipo de dispositivo encontrado.</div>`;
+        }
     }
 
-    networkMapa = new vis.Network(container, data, options);
+    // Função para atualizar mapa com filtros ativos
+    function atualizarMapaComFiltros() {
+        if (!globalDados || !networkMapa) return;
+        
+        // Obter filtros selecionados
+        const rolesAtivas = Array.from(document.querySelectorAll('.role-filter-checkbox:checked'))
+            .map(cb => cb.value);
+        
+        const esconderIsolados = document.getElementById('switchEsconderIsolados')?.checked || false;
+        const mostrarNomes = document.getElementById('MostrarNomesDispositivos')?.checked ?? true;
+        const mostrarInterfaces = document.getElementById('MostrarNomesInterfaces')?.checked ?? true;
+        const fixarNos = document.getElementById('switchFixarNos')?.checked || false;
 
-    networkMapa.on("doubleClick", function (params) {
-        if (params.nodes.length > 0) {
-            const node = nodes.get(params.nodes[0]);
-            if (node.url) {
-                window.location.href = node.url;
-            }
-        }
-    });
-}
+        // Filtrar nós por role
+        const nosVisiveis = globalDados.nos.filter(no => rolesAtivas.includes(no.role || ''));
+        const nosVisiveisIds = new Set(nosVisiveis.map(no => no.id));
+
+        // Atualizar visibilidade dos nós
+        networkMapa.body.data.nodes.forEach(node => {
+            const visible = nosVisiveisIds.has(node.id);
+            node.hidden = !visible;
+            node.fixed = fixarNos;
+            networkMapa.body.data.nodes.update(node);
+        });
+
+        // Atualizar visibilidade das arestas
+        networkMapa.body.data.edges.forEach(edge => {
+            const visible = nosVisiveisIds.has(edge.from) && nosVisiveisIds.has(edge.to);
+            edge.hidden = !visible;
+            networkMapa.body.data.edges.update(edge);
+        });
+    }
 
     // ==========================================
     // 4. BOTÕES DE EXPORTAÇÃO E IMPORTAÇÃO
@@ -624,5 +750,4 @@ function desenharMapa(dados) {
         });
     }
 
-}); 
-
+});
