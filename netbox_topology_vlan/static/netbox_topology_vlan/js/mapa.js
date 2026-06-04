@@ -416,7 +416,7 @@ const svgComputer =  `
         // Destacar a VLAN (apenas mostra as VLANs que geram a topologia atual)
         const vlanFilterList = document.getElementById('vlan-color-pickers');
         if (vlanFilterList && dados.ligacoes && dados.ligacoes.length > 0) {
-            // Garantir que limpamos espaços e a palavra "VLAN" caso o backend envie (Ex: "VLAN 10" -> "10")
+            // Garantir que limpamos espaços e a palavra "VLAN" 
             const vlans = dados.vlan.split(',').map(v => v.toUpperCase().replace('VLAN', '').trim()).filter(v => v);
             let html = '';
             vlans.forEach(vlan => {
@@ -536,7 +536,7 @@ const svgComputer =  `
 
         // PROCESSAR LIGAÇÕES (EDGES)
         networkMapa.body.data.edges.forEach(edge => {
-            // CORREÇÃO CRUCIAL 1: Localizar o objeto original aceitando a inversão bidirecional do Vis.js
+            // Localizar o objeto original aceitando a inversão bidirecional do Vis.js
             const ligOrig = globalDados.ligacoes.find(l => 
                 (l.source === edge.from && l.target === edge.to) || 
                 (l.source === edge.to && l.target === edge.from) ||
@@ -545,7 +545,7 @@ const svgComputer =  `
             
             let ocultarLinha = !(nosVisiveisIds.has(edge.from) && nosVisiveisIds.has(edge.to));
             
-            // CORREÇÃO CRUCIAL 2: Garantir que a label reconstrói o texto das portas de forma segura
+            // Garantir que a label reconstrói o texto das portas de forma segura
             let labelVisivel = "";
             if (mostrarInterfaces && ligOrig) {
                 labelVisivel = `${ligOrig.source_port || ''} ↔ ${ligOrig.target_port || ''}`;
@@ -567,8 +567,9 @@ const svgComputer =  `
                     ocultarLinha = true;
                 }
 
-                // TRATAMENTO DO CAMPO VLAN SUPER ABRANGENTE (Lê as chaves corretas do teu popup backend)
+                // TRATAMENTO DO CAMPO VLAN (Lê as chaves corretas do teu popup backend)
                 let vlansDaLigacao = [];
+                let passaTodasAsVlans = false;
                 const camposValidos = [
                     ligOrig.vlan_list, 
                     ligOrig.vlan, 
@@ -578,26 +579,50 @@ const svgComputer =  `
                 ];
 
                 camposValidos.forEach(campo => {
-                    if (!campo) return;
+                    if (campo === undefined || campo === null || campo === "") return;
+                    
+                    if (String(campo).trim().toLowerCase() === 'todas') {
+                        passaTodasAsVlans = true;
+                        return;
+                    }
+
                     if (Array.isArray(campo)) {
-                        campo.forEach(v => vlansDaLigacao.push(String(v).toUpperCase().replace('VLAN', '').trim()));
-                    } else if (typeof campo === 'string' || typeof campo === 'number') {
-                        String(campo).split(',').forEach(v => vlansDaLigacao.push(String(v).toUpperCase().replace('VLAN', '').trim()));
+                        campo.forEach(v => {
+                            if (v) vlansDaLigacao.push(String(v).toUpperCase().replace('VLAN', '').trim());
+                        });
+                    } else {
+                        // Corta por vírgulas ou por espaços simultaneamente
+                        String(campo).split(/[\s,]+/).forEach(v => {
+                            const vLimpa = v.toUpperCase().replace('VLAN', '').trim();
+                            if (vLimpa) vlansDaLigacao.push(vLimpa);
+                        });
                     }
                 });
 
-                vlansDaLigacao = [...new Set(vlansDaLigacao)];
+                const listaVlansMarcadas = Object.keys(vlansParaDestacar);
 
-                // Validar se alguma das VLANs desta ligação coincide com as caixas marcadas
-                for (const vlan of vlansDaLigacao) {
-                    if (vlan && vlansParaDestacar[vlan]) {
-                        corFinal = vlansParaDestacar[vlan];
+                if (listaVlansMarcadas.length > 0) {
+                    if (passaTodasAsVlans) {
+                        // Se o cabo passa "Todas", usa a cor da primeira VLAN marcada no painel 
+                        const primeiraVlanMarcada = listaVlansMarcadas[0];
+                        corFinal = vlansParaDestacar[primeiraVlanMarcada];
                         larguraFinal = 6; 
                         temSombraVlan = true;
-                        corSombra = vlansParaDestacar[vlan];
-                        break;
+                        corSombra = vlansParaDestacar[primeiraVlanMarcada];
+                    } else {
+                        // Caso contrário, faz o loop normal número a número pelas VLANs do cabo
+                        for (const vlan of vlansDaLigacao) {
+                            if (vlan && vlansParaDestacar[vlan] !== undefined) {
+                                corFinal = vlansParaDestacar[vlan];
+                                larguraFinal = 6; 
+                                temSombraVlan = true;
+                                corSombra = vlansParaDestacar[vlan];
+                                break;
+                            }
+                        }
                     }
                 }
+
             } else if (!ligOrig) {
                 // Fallback visual baseado nos nós se não encontrar o par original
                 ocultarLinha = !(nosVisiveisIds.has(edge.from) && nosVisiveisIds.has(edge.to));
