@@ -508,7 +508,7 @@ const svgComputer =  `
     function atualizarMapaComFiltros() {
         if (!globalDados || !networkMapa) return;
         
-        // 1. Obter estado atual de todos os componentes da interface
+        // Obter estado atual de todos os componentes da interface
         const rolesAtivas = Array.from(document.querySelectorAll('.role-filter-checkbox:checked')).map(cb => cb.value);
         const statusAtivos = Array.from(document.querySelectorAll('.stp-filter-checkbox:checked')).map(cb => cb.value);
         
@@ -524,7 +524,7 @@ const svgComputer =  `
             vlansParaDestacar[vlanNum] = picker ? picker.value : '#f97316';
         });
 
-        // 2. Determinar IDs válidos com base no filtro de Roles
+        // Determinar IDs válidos com base no filtro de Roles
         const nosVisiveisIds = new Set(
             globalDados.nos
                 .filter(no => rolesAtivas.includes(no.role || ''))
@@ -534,7 +534,7 @@ const svgComputer =  `
         const nosComLigacoesAtivas = new Set();
         const arestasAtualizadas = [];
 
-        // 3. PROCESSAR LIGAÇÕES (EDGES)
+        // PROCESSAR LIGAÇÕES (EDGES)
         networkMapa.body.data.edges.forEach(edge => {
             // CORREÇÃO CRUCIAL 1: Localizar o objeto original aceitando a inversão bidirecional do Vis.js
             const ligOrig = globalDados.ligacoes.find(l => 
@@ -636,7 +636,7 @@ const svgComputer =  `
 
         networkMapa.body.data.edges.update(arestasAtualizadas);
 
-        // 4. PROCESSAR NÓS (NODES)
+        // ROCESSAR NÓS (NODES)
         const nosAtualizados = [];
 
         networkMapa.body.data.nodes.forEach(node => {
