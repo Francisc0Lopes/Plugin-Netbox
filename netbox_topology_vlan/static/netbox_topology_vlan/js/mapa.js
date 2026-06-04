@@ -567,7 +567,7 @@ const svgComputer =  `
                     ocultarLinha = true;
                 }
 
-                // TRATAMENTO DO CAMPO VLAN (Lê as chaves corretas do teu popup backend)
+                // TRATAMENTO DO CAMPO VLAN 
                 let vlansDaLigacao = [];
                 let passaTodasAsVlans = false;
                 const camposValidos = [
