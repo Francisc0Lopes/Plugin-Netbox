@@ -413,14 +413,14 @@ const svgComputer =  `
 
     function atualizarPainelFiltros(dados) {
         
-        // Filtrar por VLAN (apenas mostra as VLANs que geram a topologia atual)
+        // Destacar a VLAN (apenas mostra as VLANs que geram a topologia atual)
         const vlanFilterList = document.getElementById('vlan-color-pickers');
-        
         if (vlanFilterList && dados.ligacoes && dados.ligacoes.length > 0) {
-            const vlans = dados.vlan.split(',').map(v => v.trim()).filter(v => v);
+            // Garantir que limpamos espaços e a palavra "VLAN" caso o backend envie (Ex: "VLAN 10" -> "10")
+            const vlans = dados.vlan.split(',').map(v => v.toUpperCase().replace('VLAN', '').trim()).filter(v => v);
             let html = '';
             vlans.forEach(vlan => {
-                const corPadrao = '#ffffff'; 
+                const corPadrao = '#f97316'; // Laranja padrão do teu sistema
                 html += `
                 <div class="form-check py-0 mb-1 d-flex align-items-center justify-content-between">
                     <div class="d-flex align-items-center">
@@ -437,11 +437,16 @@ const svgComputer =  `
             });
             vlanFilterList.innerHTML = html;
 
-            // Listener para filtro de VLAN
+            // [CORREÇÃO] Listener para quando ativa/desativa a checkbox da VLAN
             document.querySelectorAll('.vlan-filter-checkbox').forEach(checkbox => {
                 checkbox.addEventListener('change', atualizarMapaComFiltros);
             });
-        }else if (vlanFilterList) {
+
+            // [CORREÇÃO ORIGINAL] Listener essencial para quando o utilizador escolhe uma COR nova!
+            document.querySelectorAll('.vlan-color-picker').forEach(picker => {
+                picker.addEventListener('input', atualizarMapaComFiltros); // 'input' atualiza em tempo real enquanto arrastas a cor
+            });
+        } else if (vlanFilterList) {
             vlanFilterList.innerHTML = `<div class="text-muted small text-center italic py-2">Nenhuma VLAN ativa.</div>`;
         }
 
@@ -494,39 +499,166 @@ const svgComputer =  `
         }else if (roleFilterList) {
             roleFilterList.innerHTML = `<div class="text-muted small text-center italic py-2">Nenhum tipo de dispositivo encontrado.</div>`;
         }
+        ['MostrarNomesDispositivos', 'MostrarNomesInterfaces', 'switchFixarNos'].forEach(id => {
+            document.getElementById(id)?.addEventListener('change', atualizarMapaComFiltros);
+        });
     }
 
     // Função para atualizar mapa com filtros ativos
     function atualizarMapaComFiltros() {
         if (!globalDados || !networkMapa) return;
         
-        // Obter filtros selecionados
-        const rolesAtivas = Array.from(document.querySelectorAll('.role-filter-checkbox:checked'))
-            .map(cb => cb.value);
+        // 1. Obter estado atual de todos os componentes da interface
+        const rolesAtivas = Array.from(document.querySelectorAll('.role-filter-checkbox:checked')).map(cb => cb.value);
+        const statusAtivos = Array.from(document.querySelectorAll('.stp-filter-checkbox:checked')).map(cb => cb.value);
         
-        const esconderIsolados = document.getElementById('switchEsconderIsolados')?.checked || false;
         const mostrarNomes = document.getElementById('MostrarNomesDispositivos')?.checked ?? true;
         const mostrarInterfaces = document.getElementById('MostrarNomesInterfaces')?.checked ?? true;
         const fixarNos = document.getElementById('switchFixarNos')?.checked || false;
 
-        // Filtrar nós por role
-        const nosVisiveis = globalDados.nos.filter(no => rolesAtivas.includes(no.role || ''));
-        const nosVisiveisIds = new Set(nosVisiveis.map(no => no.id));
-
-        // Atualizar visibilidade dos nós
-        networkMapa.body.data.nodes.forEach(node => {
-            const visible = nosVisiveisIds.has(node.id);
-            node.hidden = !visible;
-            node.fixed = fixarNos;
-            networkMapa.body.data.nodes.update(node);
+        // Mapear quais as VLANs que têm o visto e recolher a sua cor correspondente
+        const vlansParaDestacar = {};
+        document.querySelectorAll('.vlan-filter-checkbox:checked').forEach(cb => {
+            const vlanNum = cb.value.trim();
+            const picker = document.getElementById(`color-vlan-${vlanNum}`);
+            vlansParaDestacar[vlanNum] = picker ? picker.value : '#f97316';
         });
 
-        // Atualizar visibilidade das arestas
+        // 2. Determinar IDs válidos com base no filtro de Roles
+        const nosVisiveisIds = new Set(
+            globalDados.nos
+                .filter(no => rolesAtivas.includes(no.role || ''))
+                .map(no => no.id)
+        );
+
+        const nosComLigacoesAtivas = new Set();
+        const arestasAtualizadas = [];
+
+        // 3. PROCESSAR LIGAÇÕES (EDGES)
         networkMapa.body.data.edges.forEach(edge => {
-            const visible = nosVisiveisIds.has(edge.from) && nosVisiveisIds.has(edge.to);
-            edge.hidden = !visible;
-            networkMapa.body.data.edges.update(edge);
+            // CORREÇÃO CRUCIAL 1: Localizar o objeto original aceitando a inversão bidirecional do Vis.js
+            const ligOrig = globalDados.ligacoes.find(l => 
+                (l.source === edge.from && l.target === edge.to) || 
+                (l.source === edge.to && l.target === edge.from) ||
+                l.id === edge.id
+            );
+            
+            let ocultarLinha = !(nosVisiveisIds.has(edge.from) && nosVisiveisIds.has(edge.to));
+            
+            // CORREÇÃO CRUCIAL 2: Garantir que a label reconstrói o texto das portas de forma segura
+            let labelVisivel = "";
+            if (mostrarInterfaces && ligOrig) {
+                labelVisivel = `${ligOrig.source_port || ''} ↔ ${ligOrig.target_port || ''}`;
+            } else if (mostrarInterfaces && !ligOrig) {
+                // Fallback de emergência para nunca limpar o texto se o find falhar por milissegundos
+                labelVisivel = edge.label || ""; 
+            }
+            
+            // Determinar o estado Trunk original para manter a cor e o estilo tracejado
+            const isTrunk = ligOrig?.source_mode === 'Trunk' || ligOrig?.target_mode === 'Trunk';
+            let corFinal = isTrunk ? '#f97316' : '#64748b'; 
+            let larguraFinal = 3;
+            let temSombraVlan = false;
+            let corSombra = 'rgba(0,0,0,0.1)';
+
+            if (ligOrig && !ocultarLinha) {
+                // Filtro STP Status
+                if (ligOrig.stp_state && !statusAtivos.includes(ligOrig.stp_state)) {
+                    ocultarLinha = true;
+                }
+
+                // TRATAMENTO DO CAMPO VLAN SUPER ABRANGENTE (Lê as chaves corretas do teu popup backend)
+                let vlansDaLigacao = [];
+                const camposValidos = [
+                    ligOrig.vlan_list, 
+                    ligOrig.vlan, 
+                    ligOrig.vlans, 
+                    ligOrig.vlan_access, 
+                    ligOrig.vlans_trunk
+                ];
+
+                camposValidos.forEach(campo => {
+                    if (!campo) return;
+                    if (Array.isArray(campo)) {
+                        campo.forEach(v => vlansDaLigacao.push(String(v).toUpperCase().replace('VLAN', '').trim()));
+                    } else if (typeof campo === 'string' || typeof campo === 'number') {
+                        String(campo).split(',').forEach(v => vlansDaLigacao.push(String(v).toUpperCase().replace('VLAN', '').trim()));
+                    }
+                });
+
+                vlansDaLigacao = [...new Set(vlansDaLigacao)];
+
+                // Validar se alguma das VLANs desta ligação coincide com as caixas marcadas
+                for (const vlan of vlansDaLigacao) {
+                    if (vlan && vlansParaDestacar[vlan]) {
+                        corFinal = vlansParaDestacar[vlan];
+                        larguraFinal = 6; 
+                        temSombraVlan = true;
+                        corSombra = vlansParaDestacar[vlan];
+                        break;
+                    }
+                }
+            } else if (!ligOrig) {
+                // Fallback visual baseado nos nós se não encontrar o par original
+                ocultarLinha = !(nosVisiveisIds.has(edge.from) && nosVisiveisIds.has(edge.to));
+            }
+
+            if (!ocultarLinha) {
+                nosComLigacoesAtivas.add(edge.from);
+                nosComLigacoesAtivas.add(edge.to);
+            }
+
+            // Forçar o Vis.js a redesenhar a fonte legível e os traços dashes
+            arestasAtualizadas.push({
+                id: edge.id,
+                hidden: ocultarLinha,
+                label: labelVisivel,
+                width: larguraFinal,
+                dashes: isTrunk || edge.dashes, // Mantém o tracejado se for linha Trunk
+                color: { color: corFinal, highlight: '#00d4ff', hover: '#00d4ff' },
+                font: { 
+                    align: 'top',
+                    size: 8, // Ligeiramente maior para não sumir quando a linha alarga no destaque
+                    color: '#000000',
+                    strokeWidth: 2,   
+                    strokeColor: '#ffffff',
+                    face: 'monospace',
+                },
+                shadow: {
+                    enabled: true,
+                    color: corSombra,
+                    size: temSombraVlan ? 14 : 0, 
+                    x: 0,
+                    y: 0
+                }
+            });
         });
+
+        networkMapa.body.data.edges.update(arestasAtualizadas);
+
+        // 4. PROCESSAR NÓS (NODES)
+        const nosAtualizados = [];
+
+        networkMapa.body.data.nodes.forEach(node => {
+            const noOrig = globalDados.nos.find(n => n.id === node.id);
+            let ocultarNo = !nosVisiveisIds.has(node.id);
+            let labelVisivel = ""; 
+
+            if (noOrig) {
+                if (mostrarNomes && !ocultarNo) {
+                    labelVisivel = noOrig.name;
+                }
+            }
+
+            nosAtualizados.push({
+                id: node.id,
+                hidden: ocultarNo,
+                label: labelVisivel,
+                fixed: fixarNos ? { x: true, y: true } : { x: false, y: false }
+            });
+        });
+
+        networkMapa.body.data.nodes.update(nosAtualizados);
     }
 
     // ==========================================
