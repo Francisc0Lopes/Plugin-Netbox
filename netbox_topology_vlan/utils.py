@@ -1,6 +1,5 @@
 from dcim.models import Interface
 from ipam.models import VLAN
-from .stp_algorithm import STPCalculator
 
 def get_vlan(vlan_ids, site_id=None):
     try:
@@ -11,20 +10,17 @@ def get_vlan(vlan_ids, site_id=None):
     except Exception:
         return {"Erro": "Erro ao procurar VLANs"}
     
-    interfaces = (Interface.objects.filter(untagged_vlan__in=vlans) | 
-                  Interface.objects.filter(tagged_vlans__in=vlans)).distinct()
+    # Otimização de Queries com select_related e prefetch_related para evitar o problema de N+1 queries
+    interfaces = Interface.objects.filter(
+        untagged_vlan__in=vlans
+    ) | Interface.objects.filter(
+        tagged_vlans__in=vlans
+    )
+    interfaces = interfaces.select_related('device', 'cable').prefetch_related('tagged_vlans', 'untagged_vlan').distinct()
     
     nos = []
     ligacoes = []
     cabos_processados = set()
-    
-    # ⭐ NOVO: Calcular STP para cada VLAN
-    stp_results = {}
-    for vlan in vlans:
-        calculator = STPCalculator(vlan.id)
-        if calculator.calculate():
-            calculator.apply_to_netbox()
-            stp_results[vlan.id] = calculator
     
     for interface in interfaces:
         Equip = interface.device
@@ -82,22 +78,9 @@ def get_vlan(vlan_ids, site_id=None):
                         vlans_str = f"{len(vlans_permitidas)} VLANs"
                     else:
                         vlans_str = ", ".join(vlans_permitidas) if vlans_permitidas else "N/A"
-
-                    # ⭐ NOVO: Obter estado STP dinâmico
-                    stp_state = "Forwarding"  # Default
-                    if len(vlans_efetivas) > 0:
-                        # Para a primeira VLAN efetiva
-                        vlan_id = list(vlans_efetivas)[0]
-                        for vlan_obj in vlans:
-                            if vlan_obj.vid == vlan_id and vlan_obj.id in stp_results:
-                                calculator = stp_results[vlan_obj.id]
-                                port_info = calculator.get_port_state_and_role(
-                                    Equip.id, 
-                                    remote_interface.device.id
-                                )
-                                stp_state = port_info['state']
-                                break
-
+                        
+                    stp_state = interface.custom_field_data.get('stp_port_state') or "forwarding"
+        
                     ligacoes.append({
                         "source" : Equip.id, 
                         "target" : remote_interface.device.id, 
@@ -112,20 +95,25 @@ def get_vlan(vlan_ids, site_id=None):
 
                     if not any(n['id'] == Equip.id for n in nos):
                         s_role = getattr(Equip, 'role', getattr(Equip, 'device_role', None))
+                        is_root = Equip.custom_field_data.get('stp_root_bridge', False)
                         nos.append({
                             "id": Equip.id,
                             "name": Equip.name, 
                             "url": Equip.get_absolute_url(),
-                            "role": s_role.name if s_role else "" 
+                            "role": s_role.name if s_role else "" ,
+                            "is_root_bridge": is_root
                         })
 
                     if not any(n['id'] == remote_interface.device.id for n in nos):
+                        r_device = remote_interface.device
                         r_role = getattr(remote_interface.device, 'role', getattr(remote_interface.device, 'device_role', None))
+                        is_root_remote = r_device.custom_field_data.get('stp_root_bridge', False)
                         nos.append({
                             "id": remote_interface.device.id,
                             "name": remote_interface.device.name, 
                             "url": remote_interface.device.get_absolute_url(),
-                            "role": r_role.name if r_role else "" 
+                            "role": r_role.name if r_role else "" ,
+                            "is_root_bridge": is_root_remote
                         })
                     
     nomes_vlans = ", ".join([str(v.vid) for v in vlans])
