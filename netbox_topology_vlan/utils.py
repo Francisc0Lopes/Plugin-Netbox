@@ -1,12 +1,13 @@
 from dcim.models import Interface
 from ipam.models import VLAN
+from .stp_algorithm import STPCalculator
 
 def get_vlan(vlan_ids, site_id=None):
     try:
         vlans_qs = VLAN.objects.filter(id__in=vlan_ids)
         if not vlans_qs.exists():
             return {"Erro": "VLANs não encontradas"}
-        vlans = list(vlans_qs) # Converte para lista para ser mais rápido
+        vlans = list(vlans_qs)
     except Exception:
         return {"Erro": "Erro ao procurar VLANs"}
     
@@ -17,12 +18,18 @@ def get_vlan(vlan_ids, site_id=None):
     ligacoes = []
     cabos_processados = set()
     
+    # ⭐ NOVO: Calcular STP para cada VLAN
+    stp_results = {}
+    for vlan in vlans:
+        calculator = STPCalculator(vlan.id)
+        if calculator.calculate():
+            stp_results[vlan.id] = calculator
+    
     for interface in interfaces:
         Equip = interface.device
         
         if site_id and str(Equip.site.id) != str(site_id):
-            continue  # Se o equipamento não for deste site, ignora e salta para o próximo!
-        
+            continue
         
         if interface.cable and interface.cable.id not in cabos_processados:
             cabos = interface.cable
@@ -43,7 +50,6 @@ def get_vlan(vlan_ids, site_id=None):
                 is_source_trunk = len(source_vids) > 0
                 is_remote_trunk = len(remote_vids) > 0
                 
-                # Interseção rigorosa (O que consegue realmente atravessar o cabo?)
                 if is_source_trunk and is_remote_trunk:
                     vlans_fisicas = source_vids.intersection(remote_vids)
                 elif is_source_trunk and not is_remote_trunk:
@@ -52,25 +58,21 @@ def get_vlan(vlan_ids, site_id=None):
                     vlans_fisicas = remote_vids.intersection({source_access_vid}) if source_access_vid else set()
                 else:
                     vlans_fisicas = set()
-                    
-                # Filtrar pelo que o utilizador selecionou no menu do NetBox
+                
                 vids_selecionadas = {v.vid for v in vlans}
                 vlans_efetivas = vlans_fisicas.intersection(vids_selecionadas)
                 
-                # Validar se é uma ligação pura de Access (ex: Switch para PC)
                 is_pure_access_link = not is_source_trunk and not is_remote_trunk
                 passa_access = False
                 if is_pure_access_link:
                     if source_access_vid in vids_selecionadas or remote_access_vid in vids_selecionadas:
                         passa_access = True
                 
-                # Só adiciona a ligação E os equipamentos se a rede passar!
                 if len(vlans_efetivas) > 0 or passa_access:
                     cabos_processados.add(cabos.id)
                     
                     vlans_permitidas = [str(vid) for vid in sorted(vlans_efetivas)]
                     
-                    # Lógica do Pop-up
                     if len(vlans_permitidas) == 0:
                         vlans_str = "Nenhuma"
                     elif len(vlans_permitidas) == len(vids_selecionadas) and len(vids_selecionadas) > 1:
@@ -80,7 +82,21 @@ def get_vlan(vlan_ids, site_id=None):
                     else:
                         vlans_str = ", ".join(vlans_permitidas) if vlans_permitidas else "N/A"
 
-                    # Adiciona a linha (Cabo)
+                    # ⭐ NOVO: Obter estado STP dinâmico
+                    stp_state = "Forwarding"  # Default
+                    if len(vlans_efetivas) > 0:
+                        # Para a primeira VLAN efetiva
+                        vlan_id = list(vlans_efetivas)[0]
+                        for vlan_obj in vlans:
+                            if vlan_obj.vid == vlan_id and vlan_obj.id in stp_results:
+                                calculator = stp_results[vlan_obj.id]
+                                port_info = calculator.get_port_state_and_role(
+                                    Equip.id, 
+                                    remote_interface.device.id
+                                )
+                                stp_state = port_info['state']
+                                break
+
                     ligacoes.append({
                         "source" : Equip.id, 
                         "target" : remote_interface.device.id, 
@@ -88,12 +104,11 @@ def get_vlan(vlan_ids, site_id=None):
                         "source_mode": "Trunk" if is_source_trunk else "Access",
                         "target_port": remote_interface.name,
                         "target_mode": "Trunk" if is_remote_trunk else "Access", 
-                        "stp_state": "Forwarding",
+                        "stp_state": stp_state,  # ⭐ AGORA DINÂMICO!
                         "vlans_trunk": vlans_str, 
                         "vlan_access": str(source_access_vid) if source_access_vid else "N/A"
                     })
 
-                    # Adiciona a máquina de origem (só se ainda não estiver na lista)
                     if not any(n['id'] == Equip.id for n in nos):
                         s_role = getattr(Equip, 'role', getattr(Equip, 'device_role', None))
                         nos.append({
@@ -103,7 +118,6 @@ def get_vlan(vlan_ids, site_id=None):
                             "role": s_role.name if s_role else "" 
                         })
 
-                    # Adiciona a máquina de destino (só se ainda não estiver na lista)
                     if not any(n['id'] == remote_interface.device.id for n in nos):
                         r_role = getattr(remote_interface.device, 'role', getattr(remote_interface.device, 'device_role', None))
                         nos.append({

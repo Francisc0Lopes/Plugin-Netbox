@@ -2,20 +2,32 @@ from netbox.plugins.jobs import register_jobs
 from rq_job import Job
 from ipam.models import VLAN
 from django.core.cache import cache
-from ..utils import get_vlan
+from .stp_algorithm import calculate_stp_for_all_vlans
 
-# AINDA NÃO TESTADO, A IDEIA É USAR ESTE JOB PARA REGERAR AS TOPOLOGIAS DE TODAS AS VLANs EM SEGUNDO PLANO
-"""Para usar em topologias gigantes usa tarefas em segundo plano"""
-class RegenerateTopology(Job):
-    """Recalcula topologias com algoritmo STP"""
+class CalculateSTPTopology(Job):
+    """Calcula automaticamente a topologia STP para todas as VLANs"""
+    
     class Meta:
-        name = "Regenerar Topologias"
-        description = "Recalcula topologias de todas as VLANs com lógica STP"
+        name = "Calcular STP"
+        description = "Calcula a topologia Spanning Tree Protocol para todas as VLANs e atualiza NetBox"
+        task_queues = ['default']
+        hidden = False
     
     def do_work(self):
-        for vlan in VLAN.objects.all():
-            topology = get_vlan(vlan.id)
-            # Cache com TTL para evitar recalcular constantemente
-            cache.set(f'vlan_topology_{vlan.id}', topology, timeout=3600)
+        self.logger.info("🔄 Iniciando cálculo STP para todas as VLANs...")
+        
+        try:
+            # Calcular e aplicar ao NetBox
+            results = calculate_stp_for_all_vlans(apply_to_netbox=True)
+            
+            # Cache com TTL de 1 hora
+            cache.set('stp_results_all', results, timeout=3600)
+            
+            self.logger.info(f"✅ Cálculo STP concluído para {len(results)} VLANs!")
+            return f"Sucesso: {len(results)} VLANs processadas"
+            
+        except Exception as e:
+            self.logger.error(f"❌ Erro ao calcular STP: {e}")
+            raise e
 
-register_jobs(RegenerateTopology)
+register_jobs(CalculateSTPTopology)
