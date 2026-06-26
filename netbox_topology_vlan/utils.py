@@ -23,6 +23,7 @@ def get_vlan(vlan_ids, site_id=None):
     for vlan in vlans:
         calculator = STPCalculator(vlan.id)
         if calculator.calculate():
+            calculator.apply_to_netbox()
             stp_results[vlan.id] = calculator
     
     for interface in interfaces:
@@ -104,7 +105,7 @@ def get_vlan(vlan_ids, site_id=None):
                         "source_mode": "Trunk" if is_source_trunk else "Access",
                         "target_port": remote_interface.name,
                         "target_mode": "Trunk" if is_remote_trunk else "Access", 
-                        "stp_state": stp_state,  # ⭐ AGORA DINÂMICO!
+                        "stp_state": stp_state.capitalize(), 
                         "vlans_trunk": vlans_str, 
                         "vlan_access": str(source_access_vid) if source_access_vid else "N/A"
                     })

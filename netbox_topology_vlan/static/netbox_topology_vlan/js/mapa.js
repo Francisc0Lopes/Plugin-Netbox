@@ -106,7 +106,13 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(data => {
                 document.getElementById('mapa-rede').style.opacity = '1';
                 if (data.Erro) return alert(data.Erro);
-                
+                if (data.ligacoes) {
+                    data.ligacoes.forEach(lig => {
+                        if (lig.stp_state) {
+                            lig.stp_state = lig.stp_state.charAt(0).toUpperCase() + lig.stp_state.slice(1).toLowerCase();
+                        }
+                    });
+                }
                 // Atualiza as caixas pretas de estatísticas
                 document.getElementById('stat-nos').innerText = data.nos.length;
                 document.getElementById('stat-ligacoes').innerText = data.ligacoes.length;
