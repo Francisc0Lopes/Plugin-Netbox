@@ -50,7 +50,7 @@ class STPCalculator:
             if cable_id in processed_cables:
                 continue
 
-            # ⭐ CORREÇÃO: Usar o link_peers de forma segura para evitar overhead m2m recursivo do NetBox
+            # Usar o link_peers de forma segura para evitar overhead m2m recursivo do NetBox
             remote_interface = None
             try:
                 peers = interface.link_peers
@@ -233,7 +233,7 @@ class STPCalculator:
         Salva de forma limpa e atómica os estados teóricos calculados pelo background job.
         """
         try:
-            # 1. Atualizar flags de Root Bridge nos Dispositivos do nosso escopo
+            # Atualizar flags de Root Bridge nos Dispositivos do nosso escopo
             for device_id, device in self.switches.items():
                 is_root = (device_id == self.root_bridge)
                 # Só grava se houver alteração real para evitar locks na BD
@@ -241,7 +241,7 @@ class STPCalculator:
                     device.custom_field_data['stp_root_bridge'] = is_root
                     device.save()
 
-            # 2. Atualizar estados das Interfaces envolvidas nos links
+            # Atualizar estados das Interfaces envolvidas nos links
             for link in self.links:
                 source_id = link['source']
                 target_id = link['target']

@@ -457,12 +457,12 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             vlanFilterList.innerHTML = html;
 
-            // [CORREÇÃO] Listener para quando ativa/desativa a checkbox da VLAN
+            // Listener para quando ativa/desativa a checkbox da VLAN
             document.querySelectorAll('.vlan-filter-checkbox').forEach(checkbox => {
                 checkbox.addEventListener('change', atualizarMapaComFiltros);
             });
 
-            // [CORREÇÃO ORIGINAL] Listener essencial para quando o utilizador escolhe uma COR nova!
+            // Listener essencial para quando o utilizador escolhe uma COR nova!
             document.querySelectorAll('.vlan-color-picker').forEach(picker => {
                 picker.addEventListener('input', atualizarMapaComFiltros); // 'input' atualiza em tempo real enquanto arrastas a cor
             });
