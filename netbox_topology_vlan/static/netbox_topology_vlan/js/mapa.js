@@ -567,11 +567,10 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Garantir que a label reconstrói o texto das portas de forma segura
             let labelVisivel = "";
-            if (mostrarInterfaces && ligOrig) {
-                labelVisivel = `${ligOrig.source_port || ''} ↔ ${ligOrig.target_port || ''}`;
-            } else if (mostrarInterfaces && !ligOrig) {
-                // Fallback de emergência para nunca limpar o texto se o find falhar por milissegundos
-                labelVisivel = edge.label || ""; 
+            if (ligOrig) {
+                labelVisivel = mostrarInterfaces ? `${ligOrig.source_port || ''} ↔ ${ligOrig.target_port || ''}` : "";
+            } else {
+                labelVisivel = mostrarInterfaces ? (edge.label || "") : "";
             }
             
             // Determinar o estado Trunk original para manter a cor e o estilo tracejado
@@ -663,9 +662,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 color: { color: corFinal, highlight: '#00d4ff', hover: '#00d4ff' },
                 font: { 
                     align: 'top',
-                    size: 8, // Ligeiramente maior para não sumir quando a linha alarga no destaque
-                    color: '#000000',
-                    strokeWidth: 2,   
+                    size: mostrarInterfaces ? 8 : 0,
+                    color: mostrarInterfaces ? '#000000' : 'transparent',
+                    strokeWidth: mostrarInterfaces ? 2 : 0,
                     strokeColor: '#ffffff',
                     face: 'monospace',
                 },
