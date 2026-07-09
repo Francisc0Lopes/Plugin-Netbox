@@ -691,7 +691,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (noOrig) {
                 if (mostrarNomes && !ocultarNo) {
-                    labelVisivel = noOrig.name;
+                    labelVisivel = noOrig.is_root_bridge ? `${noOrig.name} - (RB)`: noOrig.name;
                 }
             }
 
