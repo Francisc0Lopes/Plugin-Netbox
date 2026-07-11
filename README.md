@@ -185,7 +185,7 @@ netbox_topology_vlan/
 | **Curso** | Licenciatura em Engenharia Informática, Redes e Telecomunicações (LEIRT) |
 | **Ano letivo** | 2025/2026 |
 | **Autores** | Francisco Lopes, João Constantino |
-| **Orientação** | Nuno Cota, Gonçalo Esteves |
+| **Orientadores** | Professor Nuno Cota, Professor Gonçalo Esteves |
 
 ## Referências
 
