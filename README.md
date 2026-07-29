@@ -47,30 +47,30 @@ Desenvolvido no âmbito do Projeto Final de Curso da Licenciatura em Engenharia 
 
 ### Dynamic VLAN Topology Visualization
 
-![VLAN topology visualization](/home/consta/netbox-docker/Images/Plugin.png)
+![VLAN topology visualization](../Images/Plugin.png)
 
 Visualização interativa da topologia lógica de VLAN
 
 ### Dynamic VLAN Filtering
 
-![VLAN filtering](/home/consta/netbox-docker/Images/FILTROSDECOR.png)
+![VLAN filtering](../Images/FILTROSDECOR.png)
 
 Filtragem interativa da topologia por VLAN, permitindo destacar e visualizar VLANs específicas.
 
 ### Connection, VLAN and STP Details
 
-![Connection, VLAN and STP details](/home/consta/netbox-docker/Images/pop.png)
+![Connection, VLAN and STP details](../Images/pop.png)
 
 Pop-ups interativos que exibem detalhes da conexão, VLANs transmitidas pelos links e estados das portas STP.
 
-### Warnings 
+### Warnings
 
-![ Warnings 1](/home/consta/netbox-docker/Images/Aviso1.png)
-![ Warnings 2](/home/consta/netbox-docker/Images/Aviso2.png)
+![Warnings 1](../Images/Aviso1.png)
+![Warnings 2](../Images/Aviso2.png)
 
 ### Network Topology Legend
 
-![Network topology legend](/home/consta/netbox-docker/Images/Legenda.png)
+![Network topology legend](../Images/Legenda.png)
 
 Legenda visual que identifica dispositivos de rede, tipos de conexão e elementos de topologia representados no plugin.
 
