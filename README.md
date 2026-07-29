@@ -47,7 +47,7 @@ Desenvolvido no âmbito do Projeto Final de Curso da Licenciatura em Engenharia 
 
 ### Dynamic VLAN Topology Visualization
 
-![VLAN topology visualization](https://imgur.com/gallery/plugin-YBOIzg7)
+![VLAN topology visualization](https://imgur.com/a/plugin-YBOIzg7)
 
 Visualização interativa da topologia lógica de VLAN
 
