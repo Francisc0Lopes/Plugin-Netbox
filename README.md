@@ -62,7 +62,7 @@ Pop-ups interativos que exibem detalhes da conexão, VLANs transmitidas pelos li
 
 ### Warnings
 
-<img width="786" height="606" alt="Aviso1" src="https://github.com/user-attachments/assets/a3f3f200-6773-4155-acdc-19dde99e922a" />
+<img width="1569" height="886" alt="Aviso1" src="https://github.com/user-attachments/assets/a3f3f200-6773-4155-acdc-19dde99e922a" />
 <img width="1569" height="886" alt="Aviso2" src="https://github.com/user-attachments/assets/06316662-6dd2-4f3a-90c5-3d19260ebe45" />
 
 ### Network Topology Legend
