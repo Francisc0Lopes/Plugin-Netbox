@@ -43,6 +43,37 @@ Desenvolvido no âmbito do Projeto Final de Curso da Licenciatura em Engenharia 
 | **Interface interativa** | Renderização com [vis-network](https://visjs.github.io/vis-network/docs/network/); filtros por VLAN, tipo de dispositivo e estado STP; *popups* de detalhe; posições de nós persistidas (`DeviceCoordinates`); painel de estatísticas; atalhos de navegação. |
 | **Cache invalidada por eventos** | *Signals* do Django invalidam a *cache* da topologia sempre que `Device`, `Interface` ou `VLAN` são criados, alterados ou eliminados. |
 
+## Screenshots
+
+### Dynamic VLAN Topology Visualization
+
+![VLAN topology visualization](/home/consta/netbox-docker/Images/Plugin.png)
+
+Visualização interativa da topologia lógica de VLAN
+
+### Dynamic VLAN Filtering
+
+![VLAN filtering](/home/consta/netbox-docker/Images/FILTROSDECOR.png)
+
+Filtragem interativa da topologia por VLAN, permitindo destacar e visualizar VLANs específicas.
+
+### Connection, VLAN and STP Details
+
+![Connection, VLAN and STP details](/home/consta/netbox-docker/Images/pop.png)
+
+Pop-ups interativos que exibem detalhes da conexão, VLANs transmitidas pelos links e estados das portas STP.
+
+### Warnings 
+
+![ Warnings 1](/home/consta/netbox-docker/Images/Aviso1.png)
+![ Warnings 2](/home/consta/netbox-docker/Images/Aviso2.png)
+
+### Network Topology Legend
+
+![Network topology legend](/home/consta/netbox-docker/Images/Legenda.png)
+
+Legenda visual que identifica dispositivos de rede, tipos de conexão e elementos de topologia representados no plugin.
+
 ## Requisitos
 
 - **NetBox** ≥ 4.0 (depende de `from netbox.plugins import PluginConfig`). Testado com NetBox Community 4.6.4.
