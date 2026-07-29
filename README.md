@@ -1,4 +1,4 @@
-# NetBox Topology VLAN
+<img width="1215" height="639" alt="Plugin" src="https://github.com/user-attachments/assets/bac4e61e-fa6c-4f37-8c58-1d2983460b14" /># NetBox Topology VLAN
 
 **Plugin para NetBox — Visualização Dinâmica e Automação de Topologias Lógicas de VLANs**
 
@@ -47,30 +47,30 @@ Desenvolvido no âmbito do Projeto Final de Curso da Licenciatura em Engenharia 
 
 ### Dynamic VLAN Topology Visualization
 
-![VLAN topology visualization](https://imgur.com/a/plugin-YBOIzg7)
+![VLAN topology visualization](<img width="1215" height="639" alt="Plugin" src="https://github.com/user-attachments/assets/ab95bb9d-316e-4695-8b91-0fa766c2f647" />)
 
 Visualização interativa da topologia lógica de VLAN
 
 ### Dynamic VLAN Filtering
 
-![VLAN filtering](https://i.imgur.com/r02B4iO.png)
+![VLAN filtering](<img width="1118" height="617" alt="FILTROSDECOR " src="https://github.com/user-attachments/assets/6d55f5e9-a708-4ef9-88ef-7c2644fffd39" />)
 
 Filtragem interativa da topologia por VLAN, permitindo destacar e visualizar VLANs específicas.
 
 ### Connection, VLAN and STP Details
 
-![Connection, VLAN and STP details](https://i.imgur.com/y35Yvst.png)
+![Connection, VLAN and STP details](<img width="1859" height="950" alt="pop" src="https://github.com/user-attachments/assets/df38c725-1f11-429b-a7f9-b67e36d0ebf2" />)
 
 Pop-ups interativos que exibem detalhes da conexão, VLANs transmitidas pelos links e estados das portas STP.
 
 ### Warnings
 
-![Warnings 1](https://i.imgur.com/S99qYpD.png)
-![Warnings 2](https://i.imgur.com/y9mP3aM.png)
+![Warnings 1](<img width="786" height="606" alt="Aviso1" src="https://github.com/user-attachments/assets/3cde29ed-b7eb-4152-a28f-2bacb4492318" />)
+![Warnings 2](<img width="1569" height="886" alt="Aviso2" src="https://github.com/user-attachments/assets/10e79edd-05fb-4e99-9d74-59dc132f0475" />)
 
 ### Network Topology Legend
 
-![Network topology legend](https://i.imgur.com/7b58iMv.png)
+![Network topology legend](<img width="1268" height="662" alt="Legenda" src="https://github.com/user-attachments/assets/66520ba2-1b5a-486a-b4c2-5b54b2a6341b" />)
 
 Legenda visual que identifica dispositivos de rede, tipos de conexão e elementos de topologia representados no plugin.
 
