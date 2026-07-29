@@ -19,6 +19,7 @@ Desenvolvido no âmbito do Projeto Final de Curso da Licenciatura em Engenharia 
 ## Índice
 
 - [Funcionalidades](#funcionalidades)
+- [Screenshots](#Screenshots)
 - [Requisitos](#requisitos)
 - [Instalação](#instalação)
 - [Utilização](#utilização)
