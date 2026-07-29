@@ -45,17 +45,17 @@ Desenvolvido no âmbito do Projeto Final de Curso da Licenciatura em Engenharia 
 
 ## Screenshots
 
-### Dynamic VLAN Topology Visualization
+### Visualização Dinâmica da Topologia de VLANs
 
 <img width="1215" height="639" alt="Plugin" src="https://github.com/user-attachments/assets/bac4e61e-fa6c-4f37-8c58-1d2983460b14" />
 Visualização interativa da topologia lógica de VLAN
 
-### Dynamic VLAN Filtering
+### Filtragem/Destaque Dinâmica de VLANs
 
 <img width="1118" height="617" alt="FILTROSDECOR " src="https://github.com/user-attachments/assets/a6630834-52a3-469f-ba96-d745b450fac5" />
 Filtragem interativa da topologia por VLAN, permitindo destacar e visualizar VLANs específicas.
 
-### Connection, VLAN and STP Details
+### Detalhes de conexão, VLAN e STP
 
 <img width="1859" height="950" alt="pop" src="https://github.com/user-attachments/assets/4b9a97ed-6522-4104-87cc-782768287de0" />
 Pop-ups interativos que exibem detalhes da conexão, VLANs transmitidas pelos links e estados das portas STP.
@@ -65,7 +65,7 @@ Pop-ups interativos que exibem detalhes da conexão, VLANs transmitidas pelos li
 <img width="1569" height="886" alt="Aviso1" src="https://github.com/user-attachments/assets/a3f3f200-6773-4155-acdc-19dde99e922a" />
 <img width="1569" height="886" alt="Aviso2" src="https://github.com/user-attachments/assets/06316662-6dd2-4f3a-90c5-3d19260ebe45" />
 
-### Network Topology Legend
+### Legenda da Topologia de Rede
 
 <img width="1268" height="662" alt="Legenda" src="https://github.com/user-attachments/assets/6e2bafd9-8f74-48be-80df-ca577d45da74" />
 
