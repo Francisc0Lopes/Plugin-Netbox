@@ -1,4 +1,4 @@
-<img width="1215" height="639" alt="Plugin" src="https://github.com/user-attachments/assets/bac4e61e-fa6c-4f37-8c58-1d2983460b14" /># NetBox Topology VLAN
+
 
 **Plugin para NetBox — Visualização Dinâmica e Automação de Topologias Lógicas de VLANs**
 
@@ -47,7 +47,7 @@ Desenvolvido no âmbito do Projeto Final de Curso da Licenciatura em Engenharia 
 
 ### Dynamic VLAN Topology Visualization
 
-![VLAN topology visualization](<img width="1215" height="639" alt="Plugin" src="https://github.com/user-attachments/assets/ab95bb9d-316e-4695-8b91-0fa766c2f647" />)
+![VLAN topology visualization](<img width="1215" height="639" alt="Plugin" src="https://github.com/user-attachments/assets/bac4e61e-fa6c-4f37-8c58-1d2983460b14" /># NetBox Topology VLAN)
 
 Visualização interativa da topologia lógica de VLAN
 
